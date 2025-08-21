@@ -1,0 +1,271 @@
+﻿@model MachineStatusUpdate.Models.SVN_Equipment_Info_History
+
+
+<link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="status-form-container">
+    <div class="form-header">
+        <h1 class="form-title">Machine Status Update</h1>
+    </div>
+
+
+    <form asp-action="Create" id="statusForm">
+        <div class="form-grid">
+            <div class="form-group">
+                <label class="form-label">Tên Machine</label>
+                <input id="Code" name="Code" class="form-control" placeholder="Nhập mã machine..." />
+            </div>
+            <div class="form-group">
+                <label class="form-label">Trạng thái</label>
+                <input id="State" name="State" class="form-control" placeholder="Nhập trạng thái..." />
+            </div>
+        </div>
+        <div class="form-group full-width">
+            <label class="form-label">Mô tả</label>
+            <textarea id="Description" name="Description" class="form-control" placeholder="Nhập mô tả..."
+                rows="4"></textarea>
+        </div>
+
+        <!-- Thêm trường upload ảnh -->
+        <div class="form-group full-width">
+            <label class="form-label">Ảnh (tùy chọn)</label>
+            <div class="image-upload-container">
+                <div class="image-upload-area" id="imageUploadArea"
+                    onclick="document.getElementById('imageInput').click()">
+                    <div class="upload-text">Nhấp để chọn ảnh</div>
+                    <div class="upload-hint">Hỗ trợ: JPG, PNG, GIF, BMP (tối đa 5MB)</div>
+                </div>
+                <input type="file" id="imageInput" name="imageFile" accept="image/*" />
+                <div id="imagePreview" style="display: none;">
+                    <img id="previewImg" class="image-preview" />
+                    <div class="file-info" id="fileInfo" style="display: none;"></div>
+                    <div class="image-actions">
+                        <button type="button" class="btn-remove" onclick="removeImage()">Xóa ảnh</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+        <div class="btn-container">
+            <button type="button" id="btnSaveToDB" class="btn btn-primary">
+                Lưu trạng thái
+            </button>
+        </div>
+
+
+    </form>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+
+        let selectedFile = null; // lưu file đã chọn
+
+
+        function showToast(message, type = 'success', duration = 2000) {
+            const toastContainer = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+
+            // Icon based on type
+            let icon = '';
+            switch (type) {
+                case 'success':
+                    icon = '✓';
+                    break;
+                case 'error':
+                    icon = '✕';
+                    break;
+                default:
+                    icon = 'ℹ';
+            }
+
+            toast.innerHTML = `
+                                          <span class="toast-icon">${icon}</span>
+                                          ${message}
+                                          <button class="toast-close" onclick="closeToast(this)">&times;</button>
+                                          <div class="toast-progress"></div>
+                                          `;
+
+            toastContainer.appendChild(toast);
+
+            // Show toast
+            setTimeout(() => {
+                toast.style.display = 'block';
+            }, 10);
+
+            // Auto hide after duration
+            setTimeout(() => {
+                hideToast(toast);
+            }, duration);
+
+            return toast;
+        }
+
+        function hideToast(toast) {
+            toast.classList.add('hide');
+            setTimeout(() => {
+                if (toast.parentNode) {
+                    toast.parentNode.removeChild(toast);
+                }
+            }, 200);
+        }
+
+        function closeToast(button) {
+            const toast = button.closest('.toast');
+            hideToast(toast);
+        }
+
+        // === function image ====
+        function handleImageSelect(file) {
+            if (!file) return;
+
+            // Kiểm tra định dạng file
+            const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp'];
+            if (!allowedTypes.includes(file.type)) {
+                showToast('Chỉ cho phép upload ảnh với định dạng: JPG, PNG, GIF, BMP', 'error', 3000);
+                return;
+            }
+
+            // Kiểm tra kích thước file (5MB)
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('Kích thước ảnh không được vượt quá 5MB', 'error', 3000);
+                return;
+            }
+
+            selectedFile = file;
+
+            // Hiển thị preview
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('previewImg').src = e.target.result;
+                document.getElementById('fileInfo').textContent = `${file.name} (${(file.size / 1024).toFixed(1)} KB)`;
+                document.getElementById('imagePreview').style.display = 'block';
+                document.getElementById('imageUploadArea').style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function removeImage() {
+            selectedFile = null;
+            document.getElementById('imageInput').value = '';
+            document.getElementById('imagePreview').style.display = 'none';
+            document.getElementById('imageUploadArea').style.display = 'block';
+        }
+
+        // Drag and drop functionality
+        const imageUploadArea = document.getElementById('imageUploadArea');
+
+        imageUploadArea.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            this.classList.add('dragover');
+        });
+
+        imageUploadArea.addEventListener('dragleave', function (e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+        });
+
+        imageUploadArea.addEventListener('drop', function (e) {
+            e.preventDefault();
+            this.classList.remove('dragover');
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleImageSelect(files[0]);
+            }
+        });
+
+        // File input change event
+        document.getElementById('imageInput').addEventListener('change', function (e) {
+            if (e.target.files.length > 0) {
+                handleImageSelect(e.target.files[0]);
+            }
+        });
+
+
+        // Auto-focus first input
+        $('input[name="Code"]').focus();
+
+        document.getElementById("btnSaveToDB").addEventListener("click", function (e) {
+            e.preventDefault();
+
+            // Validate form trước khi gửi
+
+            const code = document.getElementById("Code").value.trim();
+            const status = document.getElementById("State").value.trim();
+            const description = document.getElementById("Description").value.trim();
+
+            if (!name || !status) {
+                showToast("Vui lòng điền đầy đủ thông tin bắt buộc!", 'error', 2000);
+                return;
+            }
+
+
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = "Đang lưu..."
+
+
+            // 1. Tạo đối tượng FormData mới
+
+            const formData = new FormData();
+
+            formData.append('Code', name);
+            formData.append('Name', status);
+            formData.append('Status', status);
+            formData.append('Description', description);
+
+
+            const imageInput = document.getElementById('imageInput');
+            if (imageInput.files.length > 0) {
+                formData.append('imageFile', imageInput.files[0]);
+            }
+
+            console.log("Sending data")
+
+            fetch('/Status/Create', {
+                method: 'POST',
+                body: formData
+            })
+                .then(res => {
+                    if (!res.ok) {
+                        throw new Error("Lưu trạng thái không thành công!"); // HTTP lỗi
+                    }
+                    return res.json();
+                })
+                .then(response => {
+                    console.log("Response:", response);
+
+                    if (response.success) {
+
+                        showToast(response.message || "Lưu trạng thái thành công!", 'success', 2500);
+
+                        // Reset form sau khi lưu thành công
+                        document.getElementById("statusForm").reset();
+                        document.getElementById("Code").value = '';
+                        document.getElementById("State").value = '';
+                        document.getElementById("Description").value = '';
+                        removeImage();
+
+                    } else {
+                        showToast(response.message || "Lưu trạng thái không thành công!", 'error', 2500);
+                    }
+                })
+                .catch(err => {
+                    console.error("Error:", err);
+                    showToast("Lưu trạng thái không thành công!", 'error', 2500); // HTTP lỗi hoặc JS lỗi
+                })
+                .finally(() => {
+
+                    btn.disabled = false;
+                    btn.textContent = "Lưu Trạng Thái";
+                });
+        });
+    </script>
+}
