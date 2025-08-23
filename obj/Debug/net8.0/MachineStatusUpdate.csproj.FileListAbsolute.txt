@@ -136,3 +136,9 @@ D:\MachineStatusUpdate\MachineStatusUpdate\obj\Debug\net8.0\refint\MachineStatus
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Debug\net8.0\MachineStatusUpdate.pdb
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Debug\net8.0\MachineStatusUpdate.genruntimeconfig.cache
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Debug\net8.0\ref\MachineStatusUpdate.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\obj\Debug\net8.0\MachineStatusUpdate.sourcelink.json
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\x86\leptonica-1.82.0.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\x86\tesseract50.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\x64\leptonica-1.82.0.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\x64\tesseract50.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\Tesseract.dll
