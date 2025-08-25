@@ -126,7 +126,20 @@ namespace MachineStatusUpdate.Controllers
 
                 }
 
-                model.Name = model.Code;
+                string generateName = model.Code;
+                if (!string.IsNullOrEmpty(model.Code) && model.Code.Contains("-"))
+                {
+                    var parts = model.Code.Split('-');
+                    if (parts.Length >= 2)
+                    {
+                        if (int.TryParse(parts[1], out int number))
+                        {
+                            generateName = $"#{number}";
+                        }
+                    }
+                }
+
+                model.Name = generateName;
                 model.Operation = await GetOperationFromCodeAsync(model.Code);
                 model.Datetime = DateTime.Now;
 
