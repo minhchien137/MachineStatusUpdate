@@ -142,3 +142,11 @@ D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\x86\tesseract50.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\x64\leptonica-1.82.0.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\x64\tesseract50.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\Tesseract.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\ClosedXML.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\ClosedXML.Parser.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\DocumentFormat.OpenXml.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\DocumentFormat.OpenXml.Framework.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\ExcelNumberFormat.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\RBush.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\SixLabors.Fonts.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Debug\net8.0\System.IO.Packaging.dll

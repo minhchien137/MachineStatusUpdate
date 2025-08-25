@@ -1,5 +1,6 @@
 ﻿using MachineStatusUpdate.Models;
 using Microsoft.AspNetCore.Mvc;
+using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 
 
@@ -24,6 +25,28 @@ namespace MachineStatusUpdate.Controllers
         public IActionResult Create()
         {
             return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ValidateCode([FromBody] ValidateCodeRequest request)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(request.Code))
+                {
+                    return Json(new { exists = false });
+                }
+
+                var exists = await _context.sVN_Equipment_Machine_Info
+                    .AnyAsync(x => x.SVNCode == request.Code);
+
+                return Json(new { exists = exists });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error validating code: {ex.Message}");
+                return Json(new { exists = false });
+            }
         }
 
 
@@ -60,6 +83,16 @@ namespace MachineStatusUpdate.Controllers
                 {
                     return Json(new { success = false, message = "Vui lòng điền đầy đủ thông tin bắt buộc!" });
                 }
+
+                // Kiểm tra xem Code có tồn tại trong bảng SVN_Equipment_Machine_Info không
+                var machineExists = await _context.sVN_Equipment_Machine_Info
+                    .AnyAsync(x => x.SVNCode == model.Code);
+
+                if (!machineExists)
+                {
+                    return Json(new { success = false, message = "Không tồn tại mã máy này trong hệ thống!" });
+                }
+
                 string imagePath = null;
 
                 if (imageFile != null && imageFile.Length > 0)
@@ -194,6 +227,154 @@ namespace MachineStatusUpdate.Controllers
 
                 return View(new List<SVN_Equipment_Info_History>());
             }
+        }
+
+
+
+        // Xuất File Excel
+        public async Task<IActionResult> ExportToExcel(string code = "", string state = "", string operation = "", string fromInsDateTime = "", string toInsDateTime = "")
+        {
+            var query = _context.SVN_Equipment_Info_History.AsQueryable();
+
+            if (!string.IsNullOrEmpty(code))
+                query = query.Where(x => x.Code.Contains(code));
+
+            if (!string.IsNullOrEmpty(state))
+                query = query.Where(x => x.State.Contains(state));
+
+            if (!string.IsNullOrEmpty(operation))
+                query = query.Where(x => x.Operation.Contains(operation));
+
+            if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out var fromDate))
+            {
+                query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value.Date >= fromDate.Date);
+            }
+
+            if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out var toDate))
+            {
+                query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value.Date <= toDate.Date);
+            }
+
+            // Sắp xếp bản ghi theo thời gian ASC
+            var data = await query.OrderBy(x => x.Datetime).ToListAsync();
+
+            using (var workbook = new XLWorkbook())
+            {
+                var ws = workbook.Worksheets.Add("StatusHistory");
+                var currentRow = 1;
+
+                // Font mặc định
+                ws.Style.Font.FontName = "Times New Roman";
+                ws.Style.Font.FontSize = 11;
+
+                // Header
+                string[] headers = { "Id", "Code", "Name", "State", "Operation", "Description", "Image", "Datetime" };
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    var cell = ws.Cell(currentRow, i + 1);
+                    cell.Value = headers[i];
+                    cell.Style.Font.Bold = true;
+                    cell.Style.Fill.BackgroundColor = XLColor.FromTheme(XLThemeColor.Accent1, 0.5);
+                    cell.Style.Font.FontColor = XLColor.White;
+                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                }
+
+                // Thiết lập chiều cao hàng cho data (để ảnh hiển thị đẹp)
+                const double rowHeight = 70;
+
+                foreach (var item in data)
+                {
+                    currentRow++;
+                    ws.Row(currentRow).Height = rowHeight;
+                    ws.Cell(currentRow, 1).Value = item.Id;
+                    ws.Cell(currentRow, 2).Value = item.Code;
+                    ws.Cell(currentRow, 3).Value = item.Name;
+                    ws.Cell(currentRow, 4).Value = item.State;
+                    ws.Cell(currentRow, 5).Value = item.Operation;
+                    ws.Cell(currentRow, 6).Value = item.Description;
+
+                    if (!string.IsNullOrEmpty(item.Image))
+                    {
+                        try
+                        {
+                            string imagePath = "";
+                            if (item.Image.StartsWith("/uploads/"))
+                            {
+                                imagePath = Path.Combine(_webHostEnvironment.WebRootPath, item.Image.TrimStart('/').Replace('/', Path.DirectorySeparatorChar));
+                            }
+                            else
+                            {
+                                imagePath = item.Image;
+                            }
+
+                            if (System.IO.File.Exists(imagePath))
+                            {
+
+                                var picture = ws.AddPicture(imagePath);
+                                picture.MoveTo(ws.Cell(currentRow, 7), 8, 5);
+                                picture.WithSize(100, 70);
+
+
+                                var imageCell = ws.Cell(currentRow, 7);
+                                imageCell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                                imageCell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                            }
+                            else
+                            {
+
+                                ws.Cell(currentRow, 7).Value = "No image";
+                                ws.Cell(currentRow, 7).Style.Font.FontColor = XLColor.Gray;
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+
+                            ws.Cell(currentRow, 7).Value = $"Error: {ex.Message}";
+                            ws.Cell(currentRow, 7).Style.Font.FontColor = XLColor.Red;
+                        }
+                    }
+                    else
+                    {
+                        ws.Cell(currentRow, 7).Value = "No image";
+                        ws.Cell(currentRow, 7).Style.Font.FontColor = XLColor.Gray;
+                    }
+                    ws.Cell(currentRow, 8).Value = item.Datetime?.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+
+                // Canh giữa các cột số và ngày
+                ws.Columns(1, 1).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Columns(2, 2).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Columns(3, 3).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Columns(4, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Columns(5, 5).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Columns(7, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+
+                ws.Column(1).Width = 8;
+                ws.Column(2).Width = 15;
+                ws.Column(3).Width = 15;
+                ws.Column(4).Width = 15;
+                ws.Column(5).Width = 15;
+                ws.Column(6).Width = 15;
+                ws.Column(7).Width = 15;
+                ws.Column(8).Width = 18;
+
+                using (var stream = new MemoryStream())
+                {
+
+                    workbook.SaveAs(stream);
+                    return File(stream.ToArray(),
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "StatusHistory.xlsx");
+                }
+
+            }
+
+        }
+
+        public class ValidateCodeRequest
+        {
+            public string Code { get; set; }
         }
     }
 }
