@@ -1,4 +1,5 @@
 wwwroot\css\create-form.css
+wwwroot\css\report.css
 wwwroot\css\result.css
 wwwroot\css\site.css
 wwwroot\favicon.ico
@@ -66,3 +67,5 @@ wwwroot\uploads\status-images\20250822_133117_51ccec397e65495091a24fcae0c16fe7.j
 wwwroot\uploads\status-images\20250822_165712_4e72f43cdbfa4a8994d89951d82c36c0.png
 wwwroot\uploads\status-images\20250823_145846_3f582477454a46dc8e50ba75235afed9.jpg
 wwwroot\uploads\status-images\20250823_154917_2d7a8ead33814eceb6cfd97efbd28627.jpg
+wwwroot\uploads\status-images\20250827_145445_0b6009cde81442838440bd477c17e435.png
+wwwroot\uploads\status-images\20250827_145531_383b5d99498f466995a8d4368d7598df.png

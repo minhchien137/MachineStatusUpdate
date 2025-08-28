@@ -40,6 +40,14 @@ build_metadata.AdditionalFiles.CssScope =
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
+[D:/MachineStatusUpdate/MachineStatusUpdate/Views/Status/DowntimeDetailReport.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzXERvd250aW1lRGV0YWlsUmVwb3J0LmNzaHRtbA==
+build_metadata.AdditionalFiles.CssScope = 
+
+[D:/MachineStatusUpdate/MachineStatusUpdate/Views/Status/DowntimeSummaryReport.cshtml]
+build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzXERvd250aW1lU3VtbWFyeVJlcG9ydC5jc2h0bWw=
+build_metadata.AdditionalFiles.CssScope = 
+
 [D:/MachineStatusUpdate/MachineStatusUpdate/Views/Status/Result.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzXFJlc3VsdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 

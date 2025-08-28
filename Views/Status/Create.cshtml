@@ -1,11 +1,8 @@
 ﻿@model MachineStatusUpdate.Models.SVN_Equipment_Info_History
 
-
 <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
 
-<!-- Toast Container -->
 <div class="toast-container" id="toastContainer"></div>
-
 
 <div class="confirmation-modal" id="confirmationModal">
     <div class="modal-content">
@@ -22,40 +19,41 @@
         <h1 class="form-title">Machine Status Update</h1>
     </div>
 
-
     <form asp-action="Create" id="statusForm">
         <div class="form-grid">
-
             <div class="form-group">
                 <label class="form-label">Mã Machine</label>
                 <div class="input-group">
-                    <input id="Code" name="Code" class="form-control" placeholder="Nhập hoặc quét mã machine..." />
-                    <button type="button" class="scan-btn" data-target="Code" data-bs-toggle="modal"
-                        data-bs-target="#scanModal">📷</button>
+                    <input id="Code" name="Code" class="form-control" placeholder="Nhập mã machine..." />
                 </div>
                 <div style="margin-top: 5px;">
                     <button type="button"
                         style="width:60px; height:30px; border:none; font-size:14px; color:white; border-radius:6px; background-color:#fa6d6d;"
-                        onclick="deleteCodeField('Code', this)">Xóa</button>
+                        onclick="deleteCodeField('Code')">Xóa</button>
                 </div>
             </div>
 
-            <!-- STATE -->
             <div class="form-group">
                 <label class="form-label">Trạng thái</label>
                 <div class="input-group">
-                    <input id="State" name="State" class="form-control" placeholder="Nhập hoặc quét trạng thái..." />
-                    <button type="button" class="scan-btn" data-target="State" data-bs-toggle="modal"
-                        data-bs-target="#scanModal">📷</button>
+                    <select id="State" name="State" class="form-control">
+                        <option value="">-- Chọn trạng thái --</option>
+                        <option value="Run">Run</option>
+                        <option value="Fault">Fault</option>
+                        <option value="Adjust">Adjust</option>
+                        <option value="Item">Item</option>
+                        <option value="Maint">Maint</option>
+                        <option value="Stop">Stop</option>
+                        <option value="Devel">Devel</option>
+                    </select>
                 </div>
                 <div style="margin-top: 5px;">
                     <button type="button"
                         style="width:60px; height:30px; border:none; font-size:14px; color:white; border-radius:6px; background-color:#fa6d6d;"
-                        onclick="deleteStateField('State', this)">Xóa</button>
+                        onclick="deleteStateField('State')">Xóa</button>
                 </div>
             </div>
         </div>
-
 
         <div class="form-group full-width">
             <label class="form-label">Mô tả (tùy chọn)</label>
@@ -63,7 +61,6 @@
                 rows="4"></textarea>
         </div>
 
-        <!-- Thêm trường upload ảnh -->
         <div class="form-group full-width">
             <label class="form-label">Ảnh (tùy chọn)</label>
             <div class="image-upload-container">
@@ -83,107 +80,29 @@
             </div>
         </div>
 
-
         <div class="btn-container">
             <button type="button" id="btnSaveToDB" class="btn btn-primary">
                 Lưu trạng thái
             </button>
         </div>
-
-
     </form>
 </div>
-
-<!-- Modal quét QR -->
-<div class="modal fade" id="scanModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Quét QR/Barcode</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"
-                    onclick="stopScanner()"></button>
-            </div>
-            <div class="modal-body">
-                <div id="qr-reader" style="width:100%; height:350px;"></div>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
 
 @section Scripts {
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
-    <script src="https://unpkg.com/html5-qrcode"></script>
-
     <script>
         let selectedFile = null;
-        let html5QrcodeScanner;
-        let currentTarget = null;
 
-        document.querySelectorAll('.scan-btn').forEach(btn => {
-            btn.addEventListener('click', function () {
-                currentTarget = this.getAttribute('data-target');
-            });
-        });
-
-        // turn one camera
-        document.getElementById('scanModal').addEventListener('shown.bs.modal', () => {
-            startScanner();
-        });
-
-        // turn off camera
-        document.getElementById('scanModal').addEventListener('hidden.bs.modal', () => {
-            stopScanner();
-        });
-
-        function startScanner() {
-            html5QrcodeScanner = new Html5Qrcode("qr-reader");
-            html5QrcodeScanner.start(
-                { facingMode: "environment" },
-                {
-                    fps: 10,
-                    qrbox: { width: 250, height: 250 },
-                    formatsToSupport: [
-                        Html5QrcodeSupportedFormats.QR_CODE,
-                        Html5QrcodeSupportedFormats.EAN_13,
-                        Html5QrcodeSupportedFormats.CODE_128,
-                        Html5QrcodeSupportedFormats.CODE_39,
-                        Html5QrcodeSupportedFormats.UPC_A,
-                        Html5QrcodeSupportedFormats.UPC_E
-                    ]
-                },
-                (decodedText) => {
-                    if (currentTarget) {
-                        document.getElementById(currentTarget).value = decodedText;
-
-                        // Nếu quét được mã Code, kiểm tra luôn xem có tồn tại không
-                        if (currentTarget === 'Code') {
-                            validateCodeExists(decodedText);
-                        }
-                    }
-                    stopScanner();
-                    let modal = bootstrap.Modal.getInstance(document.getElementById('scanModal'));
-                    modal.hide();
-                    showToast("Quét thành công: " + decodedText, 'success', 2000);
-                },
-                (errorMessage) => {
-                    console.log("Scanning error:", errorMessage);
-                }
-            ).catch(err => console.error("Error starting scanner:", err));
-        }
-
-        function stopScanner() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.stop().then(() => {
-                    html5QrcodeScanner.clear();
-                }).catch(err => console.error("Error stopping scanner:", err));
+        // Code validation on blur
+        document.getElementById('Code').addEventListener('blur', function () {
+            const code = this.value.trim();
+            if (code) {
+                validateCodeExists(code);
             }
-        }
+        });
 
-        // Thêm function kiểm tra Code có tồn tại không
+        // Validate code exists
         function validateCodeExists(code) {
             if (!code || code.trim() === '') return;
 
@@ -205,21 +124,12 @@
                 });
         }
 
-        // Thêm event listener cho input Code để validate khi user nhập xong
-        document.getElementById('Code').addEventListener('blur', function () {
-            const code = this.value.trim();
-            if (code) {
-                validateCodeExists(code);
-            }
-        });
-
-
+        // Toast functions
         function showToast(message, type = 'success', duration = 2000) {
             const toastContainer = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
 
-            // Icon based on type
             let icon = '';
             switch (type) {
                 case 'success':
@@ -233,20 +143,18 @@
             }
 
             toast.innerHTML = `
-                                                                                                                                                                                                                                                        <span class="toast-icon">${icon}</span>
-                                                                                                                                                                                                                                                        ${message}
-                                                                                                                                                                                                                                                        <button class="toast-close" onclick="closeToast(this)">&times;</button>
-                                                                                                                                                                                                                                                        <div class="toast-progress"></div>
-                                                                                                                                                                                                                                                    `;
+                                                <span class="toast-icon">${icon}</span>
+                                                ${message}
+                                                <button class="toast-close" onclick="closeToast(this)">&times;</button>
+                                                <div class="toast-progress"></div>
+                                            `;
 
             toastContainer.appendChild(toast);
 
-            // Show toast
             setTimeout(() => {
                 toast.style.display = 'block';
             }, 10);
 
-            // Auto hide after duration
             setTimeout(() => {
                 hideToast(toast);
             }, duration);
@@ -268,18 +176,16 @@
             hideToast(toast);
         }
 
-        // === function image ====
+        // Image handling functions
         function handleImageSelect(file) {
             if (!file) return;
 
-            // Kiểm tra định dạng file
             const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/bmp'];
             if (!allowedTypes.includes(file.type)) {
                 showToast('Chỉ cho phép upload ảnh với định dạng: JPG, PNG, GIF, BMP', 'error', 3000);
                 return;
             }
 
-            // Kiểm tra kích thước file (5MB)
             if (file.size > 5 * 1024 * 1024) {
                 showToast('Kích thước ảnh không được vượt quá 5MB', 'error', 3000);
                 return;
@@ -287,7 +193,6 @@
 
             selectedFile = file;
 
-            // Hiển thị preview
             const reader = new FileReader();
             reader.onload = function (e) {
                 document.getElementById('previewImg').src = e.target.result;
@@ -328,29 +233,30 @@
             }
         });
 
-        // File input change event
         document.getElementById('imageInput').addEventListener('change', function (e) {
             if (e.target.files.length > 0) {
                 handleImageSelect(e.target.files[0]);
             }
         });
 
-
         // Auto-focus first input
-        $('input[name="Code"]').focus();
+        document.addEventListener('DOMContentLoaded', function () {
+            const codeInput = document.getElementById('Code');
+            if (codeInput) {
+                codeInput.focus();
+            }
+        });
 
-        // Show confirmation modal
+        // Confirmation modal functions
         function showConfirmationModal() {
             document.getElementById('confirmationModal').style.display = 'block';
         }
 
-        // Hide confirmation modal
         function hideConfirmationModal() {
             document.getElementById('confirmationModal').style.display = 'none';
         }
 
-
-        // Actual save function
+        // Save function
         function performSave() {
             const code = document.getElementById("Code").value.trim();
             const status = document.getElementById("State").value.trim();
@@ -358,9 +264,8 @@
 
             const btn = document.getElementById("btnSaveToDB");
             btn.disabled = true;
-            btn.textContent = "Đang lưu..."
+            btn.textContent = "Đang lưu...";
 
-            // Tạo đối tượng FormData mới
             const formData = new FormData();
             formData.append('Code', code);
             formData.append('State', status);
@@ -371,38 +276,33 @@
                 formData.append('imageFile', imageInput.files[0]);
             }
 
-            console.log("Sending data");
-
             fetch('/Status/Create', {
                 method: 'POST',
                 body: formData
             })
                 .then(res => {
                     if (!res.ok) {
-                        throw new Error("Lưu trạng thái không thành công!"); // HTTP lỗi
+                        throw new Error("Lưu trạng thái không thành công!");
                     }
                     return res.json();
                 })
                 .then(response => {
-                    console.log("Response:", response);
-
                     if (response.success) {
                         showToast(response.message || "Lưu trạng thái thành công!", 'success', 2500);
 
-                        // Reset form sau khi lưu thành công
+                        // Reset form
                         document.getElementById("statusForm").reset();
                         document.getElementById("Code").value = '';
                         document.getElementById("State").value = '';
                         document.getElementById("Description").value = '';
                         removeImage();
-
                     } else {
                         showToast(response.message || "Lưu trạng thái không thành công!", 'error', 2500);
                     }
                 })
                 .catch(err => {
                     console.error("Error:", err);
-                    showToast("Lưu trạng thái không thành công!", 'error', 2500); // HTTP lỗi hoặc JS lỗi
+                    showToast("Lưu trạng thái không thành công!", 'error', 2500);
                 })
                 .finally(() => {
                     btn.disabled = false;
@@ -410,10 +310,10 @@
                 });
         }
 
+        // Event listeners
         document.getElementById("btnSaveToDB").addEventListener("click", function (e) {
             e.preventDefault();
 
-            // Validate form trước khi hiển thị modal
             const code = document.getElementById("Code").value.trim();
             const status = document.getElementById("State").value.trim();
 
@@ -422,38 +322,31 @@
                 return;
             }
 
-            // Hiển thị modal xác nhận
             showConfirmationModal();
         });
 
-        // Handle Yes button click
         document.getElementById("btnConfirmYes").addEventListener("click", function () {
             hideConfirmationModal();
             performSave();
         });
 
-        // Handle No button click
         document.getElementById("btnConfirmNo").addEventListener("click", function () {
             hideConfirmationModal();
         });
 
-        // Handle click outside modal to close
         document.getElementById("confirmationModal").addEventListener("click", function (e) {
             if (e.target === this) {
                 hideConfirmationModal();
             }
         });
 
-        // Xóa nội dung ô input theo id
+        // Clear input functions
         function deleteCodeField(inputId) {
             document.getElementById(inputId).value = '';
-
         }
 
         function deleteStateField(inputId) {
-            document.getElementById(inputId).value = '';
-
+            document.getElementById(inputId).selectedIndex = 0; // Reset về option đầu tiên (trống)
         }
-
     </script>
 }

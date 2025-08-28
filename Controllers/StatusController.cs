@@ -244,7 +244,7 @@ namespace MachineStatusUpdate.Controllers
 
 
 
-        // Xuất File Excel
+        // Xuất File Excel kết quả
         public async Task<IActionResult> ExportToExcel(string code = "", string state = "", string operation = "", string fromInsDateTime = "", string toInsDateTime = "")
         {
             var query = _context.SVN_Equipment_Info_History.AsQueryable();
@@ -384,6 +384,375 @@ namespace MachineStatusUpdate.Controllers
             }
 
         }
+
+        // ============= DOWNTIME DETAIL REPORT =============
+        public async Task<IActionResult> DowntimeDetailReport(string code = "", string operation = "", string state = "",
+            string fromInsDateTime = "", string toInsDateTime = "")
+        {
+            try
+            {
+                var query = _context.SVN_Equipment_Info_History.AsQueryable();
+
+                if (!string.IsNullOrEmpty(code))
+                    query = query.Where(x => x.Code.Contains(code));
+
+                if (!string.IsNullOrEmpty(operation))
+                    query = query.Where(x => x.Operation.Contains(operation));
+
+                if (!string.IsNullOrEmpty(state))
+                    query = query.Where(x => x.State.Contains(state));
+
+                if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out var fromDate))
+                    query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value >= fromDate);
+
+                if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out var toDate))
+                    query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value <= toDate);
+
+                var history = await query.OrderBy(x => x.Datetime).ToListAsync();
+                var report = new List<DowntimeReportDto>();
+
+                for (int i = 0; i < history.Count - 1; i++)
+                {
+                    var current = history[i];
+                    var next = history[i + 1];
+                    if (!current.Datetime.HasValue || !next.Datetime.HasValue) continue;
+
+                    var duration = next.Datetime.Value - current.Datetime.Value;
+
+                    report.Add(new DowntimeReportDto
+                    {
+                        Code = current.Code,
+                        Operation = current.Operation,
+                        State = current.State,
+                        FromTime = current.Datetime.Value,
+                        ToTime = next.Datetime.Value,
+                        DurationMinutes = duration.TotalMinutes
+                    });
+                }
+
+                // Truyền giá trị filter ra View
+
+                ViewBag.Code = code ?? "";
+                ViewBag.State = state ?? "";
+                ViewBag.Operation = operation ?? "";
+                ViewBag.fromInsDateTime = fromInsDateTime ?? "";
+                ViewBag.toInsDateTime = toInsDateTime ?? "";
+
+
+                return View(report);
+            }
+            catch (Exception ex)
+            {
+                ViewBag.ErrorMessage = $"Lỗi DowntimeDetailReport: {ex.Message}";
+                return View(new List<DowntimeReportDto>());
+            }
+        }
+
+
+        // ============= DOWNTIME SUMMARY REPORT =============
+        public async Task<IActionResult> DowntimeSummaryReport(string code = "", string operation = "", string state = "",
+            string fromInsDateTime = "", string toInsDateTime = "")
+        {
+            try
+            {
+                var query = _context.SVN_Equipment_Info_History.AsQueryable();
+
+                if (!string.IsNullOrEmpty(code))
+                    query = query.Where(x => x.Code.Contains(code));
+
+                if (!string.IsNullOrEmpty(operation))
+                    query = query.Where(x => x.Operation.Contains(operation));
+
+                if (!string.IsNullOrEmpty(state))
+                    query = query.Where(x => x.State.Contains(state));
+
+                if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out var fromDate))
+                    query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value >= fromDate);
+
+                if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out var toDate))
+                    query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value <= toDate);
+
+                var history = await query.OrderBy(x => x.Datetime).ToListAsync();
+                var detail = new List<DowntimeReportDto>();
+
+                for (int i = 0; i < history.Count - 1; i++)
+                {
+                    var current = history[i];
+                    var next = history[i + 1];
+                    if (!current.Datetime.HasValue || !next.Datetime.HasValue) continue;
+
+                    var duration = next.Datetime.Value - current.Datetime.Value;
+
+                    detail.Add(new DowntimeReportDto
+                    {
+                        Code = current.Code,
+                        Operation = current.Operation,
+                        State = current.State,
+                        FromTime = current.Datetime.Value,
+                        ToTime = next.Datetime.Value,
+                        DurationMinutes = duration.TotalMinutes
+                    });
+                }
+
+                var summary = detail
+                    .GroupBy(r => new { r.Code, r.Operation, r.State })
+                    .Select(g => new DowntimeSummaryDto
+                    {
+                        Code = g.Key.Code,
+                        Operation = g.Key.Operation,
+                        State = g.Key.State,
+                        TotalMinutes = g.Sum(x => x.DurationMinutes)
+                    })
+                    .ToList();
+
+
+                ViewBag.Code = code ?? "";
+                ViewBag.State = state ?? "";
+                ViewBag.Operation = operation ?? "";
+                ViewBag.fromInsDateTime = fromInsDateTime ?? "";
+                ViewBag.toInsDateTime = toInsDateTime ?? "";
+
+                return View(summary);
+            }
+            catch (Exception ex)
+            {
+                ViewBag.ErrorMessage = $"Lỗi DowntimeSummaryReport: {ex.Message}";
+                return View(new List<DowntimeSummaryDto>());
+            }
+        }
+
+        // Xuất Excel Báo cáo chi tiết thời gian DownTime
+        public async Task<IActionResult> ExportDowntimeDetailToExcel(string code = "", string operation = "", string state = "",
+            string fromInsDateTime = "", string toInsDateTime = "")
+        {
+            var query = _context.SVN_Equipment_Info_History.AsQueryable();
+
+            if (!string.IsNullOrEmpty(code))
+                query = query.Where(x => x.Code.Contains(code));
+
+            if (!string.IsNullOrEmpty(operation))
+                query = query.Where(x => x.Operation.Contains(operation));
+
+            if (!string.IsNullOrEmpty(state))
+                query = query.Where(x => x.State.Contains(state));
+
+            if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out var fromDate))
+                query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value >= fromDate);
+
+            if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out var toDate))
+                query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value <= toDate);
+
+            var history = await query.OrderBy(x => x.Datetime).ToListAsync();
+            var report = new List<DowntimeReportDto>();
+
+            for (int i = 0; i < history.Count - 1; i++)
+            {
+                var current = history[i];
+                var next = history[i + 1];
+                if (!current.Datetime.HasValue || !next.Datetime.HasValue) continue;
+
+                var duration = next.Datetime.Value - current.Datetime.Value;
+
+                report.Add(new DowntimeReportDto
+                {
+                    Code = current.Code,
+                    Operation = current.Operation,
+                    State = current.State,
+                    FromTime = current.Datetime.Value,
+                    ToTime = next.Datetime.Value,
+                    DurationMinutes = Math.Round(duration.TotalMinutes, 2)
+                });
+            }
+
+            using (var workbook = new XLWorkbook())
+            {
+                var ws = workbook.Worksheets.Add("DowntimeDetail");
+                var currentRow = 1;
+
+                // Font mặc định
+                ws.Style.Font.FontName = "Times New Roman";
+                ws.Style.Font.FontSize = 11;
+
+                // Header
+                string[] headers = { "Code", "Operation", "State", "From", "To", "Duration (minutes)" };
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    var cell = ws.Cell(currentRow, i + 1);
+                    cell.Value = headers[i];
+                    cell.Style.Font.Bold = true;
+                    cell.Style.Fill.BackgroundColor = XLColor.FromTheme(XLThemeColor.Accent1, 0.5);
+                    cell.Style.Font.FontColor = XLColor.White;
+                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                }
+
+                // Thiết lập chiều cao hàng cho data
+                const double rowHeight = 25;
+
+                foreach (var item in report)
+                {
+                    currentRow++;
+                    ws.Row(currentRow).Height = rowHeight;
+                    ws.Cell(currentRow, 1).Value = item.Code;
+                    ws.Cell(currentRow, 2).Value = item.Operation;
+                    ws.Cell(currentRow, 3).Value = item.State;
+                    ws.Cell(currentRow, 4).Value = item.FromTime.ToString("yyyy-MM-dd HH:mm:ss");
+                    ws.Cell(currentRow, 5).Value = item.ToTime.ToString("yyyy-MM-dd HH:mm:ss");
+                    ws.Cell(currentRow, 6).Value = item.DurationMinutes;
+                }
+
+                // Canh giữa các cột
+                ws.Columns(1, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Columns(1, 6).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                // Thiết lập chiều rộng cột
+                ws.Column(1).Width = 15; // Code
+                ws.Column(2).Width = 15; // Operation
+                ws.Column(3).Width = 15; // State
+                ws.Column(4).Width = 20; // From
+                ws.Column(5).Width = 20; // To
+                ws.Column(6).Width = 18; // Duration
+
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    return File(stream.ToArray(),
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "DowntimeDetailReport.xlsx");
+                }
+            }
+        }
+
+
+        // Xuất Excel Báo cáo tổng hợp thời gian DownTime
+        public async Task<IActionResult> ExportDowntimeSummaryToExcel(string code = "", string operation = "", string state = "",
+            string fromInsDateTime = "", string toInsDateTime = "")
+        {
+            var query = _context.SVN_Equipment_Info_History.AsQueryable();
+
+            if (!string.IsNullOrEmpty(code))
+                query = query.Where(x => x.Code.Contains(code));
+
+            if (!string.IsNullOrEmpty(state))
+                query = query.Where(x => x.State.Contains(state));
+
+            if (!string.IsNullOrEmpty(operation))
+                query = query.Where(x => x.Operation.Contains(operation));
+
+            if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out var fromDate))
+                query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value >= fromDate);
+
+            if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out var toDate))
+                query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value <= toDate);
+
+            var history = await query.OrderBy(x => x.Datetime).ToListAsync();
+            var detail = new List<DowntimeReportDto>();
+
+            for (int i = 0; i < history.Count - 1; i++)
+            {
+                var current = history[i];
+                var next = history[i + 1];
+                if (!current.Datetime.HasValue || !next.Datetime.HasValue) continue;
+
+                var duration = next.Datetime.Value - current.Datetime.Value;
+
+                detail.Add(new DowntimeReportDto
+                {
+                    Code = current.Code,
+                    Operation = current.Operation,
+                    State = current.State,
+                    FromTime = current.Datetime.Value,
+                    ToTime = next.Datetime.Value,
+                    DurationMinutes = duration.TotalMinutes
+                });
+            }
+
+            var summary = detail
+                .GroupBy(r => new { r.Code, r.Operation, r.State })
+                .Select(g => new DowntimeSummaryDto
+                {
+                    Code = g.Key.Code,
+                    Operation = g.Key.Operation,
+                    State = g.Key.State,
+                    TotalMinutes = Math.Round(g.Sum(x => x.DurationMinutes), 2)
+                })
+                .ToList();
+
+            using (var workbook = new XLWorkbook())
+            {
+                var ws = workbook.Worksheets.Add("DowntimeSummary");
+                var currentRow = 1;
+
+                // Font mặc định
+                ws.Style.Font.FontName = "Times New Roman";
+                ws.Style.Font.FontSize = 11;
+
+                // Header
+                string[] headers = { "Code", "Operation", "State", "Total Minutes" };
+                for (int i = 0; i < headers.Length; i++)
+                {
+                    var cell = ws.Cell(currentRow, i + 1);
+                    cell.Value = headers[i];
+                    cell.Style.Font.Bold = true;
+                    cell.Style.Fill.BackgroundColor = XLColor.FromTheme(XLThemeColor.Accent1, 0.5);
+                    cell.Style.Font.FontColor = XLColor.White;
+                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                }
+
+                // Thiết lập chiều cao hàng cho data
+                const double rowHeight = 25;
+
+                foreach (var item in summary)
+                {
+                    currentRow++;
+                    ws.Row(currentRow).Height = rowHeight;
+                    ws.Cell(currentRow, 1).Value = item.Code;
+                    ws.Cell(currentRow, 2).Value = item.Operation;
+                    ws.Cell(currentRow, 3).Value = item.State;
+                    ws.Cell(currentRow, 4).Value = item.TotalMinutes;
+                }
+
+                // Canh giữa các cột
+                ws.Columns(1, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                ws.Columns(1, 4).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                // Thiết lập chiều rộng cột
+                ws.Column(1).Width = 15; // Code
+                ws.Column(2).Width = 15; // Operation
+                ws.Column(3).Width = 15; // State
+                ws.Column(4).Width = 18; // Total Minutes
+
+                using (var stream = new MemoryStream())
+                {
+                    workbook.SaveAs(stream);
+                    return File(stream.ToArray(),
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                        "DowntimeSummaryReport.xlsx");
+                }
+            }
+        }
+
+        // DTO class
+        public class DowntimeReportDto
+        {
+            public string Code { get; set; }
+            public string Operation { get; set; }
+            public string State { get; set; }
+            public DateTime FromTime { get; set; }
+            public DateTime ToTime { get; set; }
+            public double DurationMinutes { get; set; }
+        }
+
+        // DTO cho tổng hợp
+        public class DowntimeSummaryDto
+        {
+            public string Code { get; set; }
+            public string Operation { get; set; }
+            public string State { get; set; }
+            public double TotalMinutes { get; set; }
+        }
+
 
         public class ValidateCodeRequest
         {
