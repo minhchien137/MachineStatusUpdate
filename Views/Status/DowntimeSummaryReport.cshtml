@@ -79,4 +79,74 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Chart -->
+    <div class="card mt-3 p-3">
+        <h5>📊 Downtime Chart</h5>
+        <canvas id="downtimeChart"></canvas>
+    </div>
 </div>
+
+@using System.Text.Json
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var rawData = @Html.Raw(JsonSerializer.Serialize(Model));
+
+    var codes = [...new Set(rawData.map(x => x.Code))];
+    var states = [...new Set(rawData.map(x => x.State))];
+
+    var colors = [
+        'rgba(255, 99, 132, 0.6)',
+        'rgba(54, 162, 235, 0.6)',
+        'rgba(255, 206, 86, 0.6)',
+        'rgba(75, 192, 192, 0.6)',
+        'rgba(153, 102, 255, 0.6)',
+        'rgba(255, 159, 64, 0.6)'
+    ];
+    var borderColors = colors.map(c => c.replace('0.8', '0.1'));
+
+    var datasets = states.map((state, i) => {
+        return {
+            label: state,
+            data: codes.map(code => {
+                return rawData
+                    .filter(x => x.Code === code && x.State === state)
+                    .reduce((sum, x) => sum + x.TotalMinutes, 0);
+            }),
+            backgroundColor: colors[i % colors.length],
+            borderColor: borderColors[i % borderColors.length],
+            borderWidth: 1
+        };
+    });
+
+    var ctx = document.getElementById('downtimeChart').getContext('2d');
+    var chart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: codes,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function (context) {
+                            var code = context.chart.data.labels[context.dataIndex];
+                            var state = context.dataset.label;
+                            var details = rawData
+                                .filter(x => x.Code === code && x.State === state)
+                                .map(x => `${x.Operation} - ${x.State}: ${x.TotalMinutes.toFixed(2)} phút`);
+                            return details;
+                        }
+                    }
+                },
+                legend: { display: true, position: 'top' }
+            },
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true, beginAtZero: true, title: { display: true, text: 'Minutes' } }
+            }
+        }
+    });
+</script>

@@ -35,6 +35,16 @@
                 <input type="date" name="toInsDateTime" value="@ViewBag.toInsDateTime" class="form-control" />
             </div>
 
+            <div class="col-md-2">
+                <label class="form-label">Số bản ghi/trang:</label>
+                <select class="form-control" name="pageSize" id="pageSizeSelect"
+                    onchange="document.getElementById('searchForm').submit();">
+                    <option value="10">10</option>
+                    <option value="25">25</option>
+                    <option value="50">50</option>
+                    <option value="100">100</option>
+                </select>
+            </div>
 
 
             <div class="col-md-4 d-flex align-items-end gap-2">
@@ -43,6 +53,8 @@
                 </button>
                 <a asp-action="DowntimeDetailReport" class="btn btn-secondary">
                     <i class="bi bi-x-circle"></i> Xóa bộ lọc</a>
+
+
                 <a asp-action="ExportDowntimeDetailToExcel" asp-route-code="@ViewBag.Code"
                     asp-route-state="@ViewBag.State" asp-route-operation="@ViewBag.Operation"
                     asp-route-fromInsDateTime="@ViewBag.fromInsDateTime"
