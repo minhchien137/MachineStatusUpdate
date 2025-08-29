@@ -23,8 +23,14 @@
         <div class="form-grid">
             <div class="form-group">
                 <label class="form-label">Mã Machine</label>
-                <div class="input-group">
+                <div class="input-group" style="display:flex; gap:5px; align-items:center;">
                     <input id="Code" name="Code" class="form-control" placeholder="Nhập mã machine..." />
+                    <!-- Nút upload QR/Barcode -->
+                    <button type="button" id="btnUploadQR"
+                        style="width:38px; height:41.8px; border: 1px solid #82d7ff; border-radius:5px; background-color:rgb(147, 213, 254); color:white; cursor:pointer;">
+                        📷
+                    </button>
+                    <input type="file" id="qrInput" accept="image/*" style="display:none;" />
                 </div>
                 <div style="margin-top: 5px;">
                     <button type="button"
@@ -94,6 +100,41 @@
     <script>
         let selectedFile = null;
 
+        // --- Upload QR/Barcode ---
+        document.getElementById("btnUploadQR").addEventListener("click", function () {
+            document.getElementById("qrInput").click();
+        });
+
+        document.getElementById("qrInput").addEventListener("change", function (e) {
+            if (e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const formData = new FormData();
+                formData.append("qrImage", file);
+
+                fetch('/Status/DecodeQR', {
+                    method: 'POST',
+                    body: formData
+                })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById("Code").value = data.code;
+                            showToast("Đã đọc mã từ QR/Barcode!", 'success', 2000);
+                            validateCodeExists(data.code);
+                        } else {
+                            showToast(data.message || "Không đọc được mã!", 'error', 2000);
+                        }
+                    })
+                    .catch(err => {
+                        console.error("Decode error:", err);
+                        showToast("Lỗi khi xử lý ảnh!", 'error', 2000);
+                    })
+                    .finally(() => {
+                        e.target.value = ''; // reset input file
+                    });
+            }
+        });
+
         // Code validation on blur
         document.getElementById('Code').addEventListener('blur', function () {
             const code = this.value.trim();
@@ -143,11 +184,11 @@
             }
 
             toast.innerHTML = `
-                                                <span class="toast-icon">${icon}</span>
-                                                ${message}
-                                                <button class="toast-close" onclick="closeToast(this)">&times;</button>
-                                                <div class="toast-progress"></div>
-                                            `;
+                                                                                                                                                                        <span class="toast-icon">${icon}</span>
+                                                                                                                                                                        ${message}
+                                                                                                                                                                        <button class="toast-close" onclick="closeToast(this)">&times;</button>
+                                                                                                                                                                        <div class="toast-progress"></div>
+                                                                                                                                                                    `;
 
             toastContainer.appendChild(toast);
 

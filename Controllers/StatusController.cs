@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
+using System.Drawing;
+using ZXing;
 
 
 namespace MachineStatusUpdate.Controllers
@@ -68,6 +70,35 @@ namespace MachineStatusUpdate.Controllers
             {
                 Console.WriteLine($"Error getting operation from code: {ex.Message}");
                 return "";
+            }
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> DecodeQR(IFormFile qrImage)
+        {
+            if (qrImage == null || qrImage.Length == 0)
+                return Json(new { success = false, message = "Chưa chọn ảnh!" });
+
+            try
+            {
+                using var stream = qrImage.OpenReadStream();
+                using var skBitmap = SkiaSharp.SKBitmap.Decode(stream);
+
+                var reader = new ZXing.SkiaSharp.BarcodeReader();
+                var result = reader.Decode(skBitmap);
+
+                if (result != null)
+                {
+                    return Json(new { success = true, code = result.Text });
+                }
+                else
+                {
+                    return Json(new { success = false, message = "Không đọc được mã từ ảnh!" });
+                }
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = "Lỗi xử lý: " + ex.Message });
             }
         }
 

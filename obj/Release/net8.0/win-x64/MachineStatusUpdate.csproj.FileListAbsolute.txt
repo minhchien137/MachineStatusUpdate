@@ -456,10 +456,14 @@ D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\staticweba
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\staticwebassets.build.json.cache
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\staticwebassets.development.json
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\staticwebassets.build.endpoints.json
-D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\staticwebassets.upToDateCheck.txt
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\MachineS.43464C3F.Up2Date
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\MachineStatusUpdate.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\refint\MachineStatusUpdate.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\MachineStatusUpdate.pdb
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\MachineStatusUpdate.genruntimeconfig.cache
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\ref\MachineStatusUpdate.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Release\net8.0\win-x64\SkiaSharp.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Release\net8.0\win-x64\System.Private.Windows.Core.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Release\net8.0\win-x64\zxing.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Release\net8.0\win-x64\ZXing.SkiaSharp.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\bin\Release\net8.0\win-x64\libSkiaSharp.dll
