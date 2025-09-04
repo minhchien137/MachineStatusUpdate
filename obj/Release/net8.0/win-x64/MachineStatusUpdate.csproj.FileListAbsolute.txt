@@ -467,3 +467,4 @@ D:\MachineStatusUpdate\MachineStatusUpdate\bin\Release\net8.0\win-x64\System.Pri
 D:\MachineStatusUpdate\MachineStatusUpdate\bin\Release\net8.0\win-x64\zxing.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\bin\Release\net8.0\win-x64\ZXing.SkiaSharp.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\bin\Release\net8.0\win-x64\libSkiaSharp.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\staticwebassets.upToDateCheck.txt

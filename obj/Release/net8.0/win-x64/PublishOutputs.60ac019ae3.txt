@@ -356,8 +356,10 @@ D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\Microsoft.Win32.SystemEvents.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\RBush.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\SixLabors.Fonts.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\SkiaSharp.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\System.Configuration.ConfigurationManager.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\System.Drawing.Common.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\System.Private.Windows.Core.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\System.IdentityModel.Tokens.Jwt.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\System.IO.Packaging.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\System.Memory.Data.dll
@@ -366,5 +368,8 @@ D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\System.Security.Permissions.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\System.Windows.Extensions.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\Tesseract.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\zxing.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\ZXing.SkiaSharp.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\Microsoft.Data.SqlClient.SNI.dll
+D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\libSkiaSharp.dll
 D:\MachineStatusUpdate\MachineStatusUpdate\obj\Release\net8.0\win-x64\PubTmp\Out\MachineStatusUpdate.deps.json

@@ -29,6 +29,8 @@ namespace MachineStatusUpdate.Controllers
             return View();
         }
 
+
+        // Hàm check mã máy có khớp không
         [HttpPost]
         public async Task<IActionResult> ValidateCode([FromBody] ValidateCodeRequest request)
         {
@@ -53,7 +55,7 @@ namespace MachineStatusUpdate.Controllers
 
 
 
-        // Method để xác định Operation dựa trên Code từ bảng SVN_Equipment_Machine_Info
+        // Hàm xác định Operation dựa trên Code
         private async Task<string> GetOperationFromCodeAsync(string code)
         {
             if (string.IsNullOrEmpty(code))
@@ -73,6 +75,7 @@ namespace MachineStatusUpdate.Controllers
             }
         }
 
+        // Hàm decode mã QR từ upload
         [HttpPost]
         public async Task<IActionResult> DecodeQR(IFormFile qrImage)
         {
@@ -103,6 +106,7 @@ namespace MachineStatusUpdate.Controllers
         }
 
 
+       
 
         [HttpPost]
         public async Task<IActionResult> Create(SVN_Equipment_Info_History model, IFormFile imageFile)
@@ -115,7 +119,7 @@ namespace MachineStatusUpdate.Controllers
                     return Json(new { success = false, message = "Vui lòng điền đầy đủ thông tin bắt buộc!" });
                 }
 
-                // Kiểm tra xem Code có tồn tại trong bảng SVN_Equipment_Machine_Info không
+                // Check code exists
                 var machineExists = await _context.sVN_Equipment_Machine_Info
                     .AnyAsync(x => x.SVNCode == model.Code);
 
@@ -174,7 +178,7 @@ namespace MachineStatusUpdate.Controllers
                 model.Operation = await GetOperationFromCodeAsync(model.Code);
                 model.Datetime = DateTime.Now;
 
-                // Gọi proc 
+                // PROC Add records
                 await _context.Database.ExecuteSqlRawAsync(
                 "EXEC [dbo].[SVN_InsertMachineStatus] {0}, {1}, {2}, {3}, {4}, {5}, {6}",
                     model.Code ?? "",

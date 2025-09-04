@@ -65,9 +65,25 @@
               "target": "Package",
               "version": "[8.0.0, )"
             },
+            "SkiaSharp": {
+              "target": "Package",
+              "version": "[3.119.0, )"
+            },
+            "System.Drawing.Common": {
+              "target": "Package",
+              "version": "[9.0.8, )"
+            },
             "Tesseract": {
               "target": "Package",
               "version": "[5.2.0, )"
+            },
+            "ZXing.Net": {
+              "target": "Package",
+              "version": "[0.16.10, )"
+            },
+            "ZXing.Net.Bindings.SkiaSharp": {
+              "target": "Package",
+              "version": "[0.16.21, )"
             }
           },
           "imports": [
