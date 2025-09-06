@@ -4,6 +4,7 @@ using ClosedXML.Excel;
 using Microsoft.EntityFrameworkCore;
 using System.Drawing;
 using ZXing;
+using MachineStatusUpdate.Services;
 
 
 namespace MachineStatusUpdate.Controllers
@@ -15,11 +16,15 @@ namespace MachineStatusUpdate.Controllers
 
         private readonly IWebHostEnvironment _webHostEnvironment;
 
+        private readonly IStatusUpdateService _statusUpdateService;
 
-        public StatusController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment)
+
+        public StatusController(ApplicationDbContext context, IWebHostEnvironment webHostEnvironment, IStatusUpdateService statusUpdateService)
         {
             _context = context;
             _webHostEnvironment = webHostEnvironment;
+            _statusUpdateService = statusUpdateService;
+
         }
 
 
@@ -105,21 +110,98 @@ namespace MachineStatusUpdate.Controllers
             }
         }
 
-
-       
-
-        [HttpPost]
-        public async Task<IActionResult> Create(SVN_Equipment_Info_History model, IFormFile imageFile)
+        // Method để xử lý lại toàn bộ dữ liệu (nếu cần)
+        public async Task<IActionResult> ProcessAllHistoryToDetail()
         {
             try
             {
-                if (string.IsNullOrEmpty(model.Code) ||
-                    string.IsNullOrEmpty(model.State))
+                // Xóa toàn bộ dữ liệu cũ trong bảng Detail
+                var existingDetails = _context.SVN_Equipment_Status_Update_Detail.ToList();
+                _context.SVN_Equipment_Status_Update_Detail.RemoveRange(existingDetails);
+                await _context.SaveChangesAsync();
+
+                // Lấy tất cả records từ History, group by Code và xử lý
+                var allHistoryRecords = await _context.SVN_Equipment_Info_History_Test
+                    .OrderBy(x => x.Code)
+                    .ThenBy(x => x.Datetime)
+                    .ToListAsync();
+
+                var groupedByCode = allHistoryRecords.GroupBy(x => x.Code).ToList();
+
+                foreach (var codeGroup in groupedByCode)
+                {
+                    var records = codeGroup.OrderBy(x => x.Datetime).ToList();
+
+                    for (int i = 0; i < records.Count; i++)
+                    {
+                        var currentRecord = records[i];
+                        if (!currentRecord.Datetime.HasValue) continue;
+
+                        // Tính EstimateTime (số phút từ EstimateTime - DateTime)
+                        double? estimateTimeMinutes = null;
+                        if (!string.IsNullOrEmpty(currentRecord.EstimateTime))
+                        {
+                            if (TimeSpan.TryParse(currentRecord.EstimateTime, out TimeSpan estimateTimeSpan))
+                            {
+                                var estimateDateTime = currentRecord.Datetime.Value.Date.Add(estimateTimeSpan);
+                                var timeDifference = estimateDateTime - currentRecord.Datetime.Value;
+                                estimateTimeMinutes = timeDifference.TotalMinutes;
+                            }
+                        }
+
+                        // Xử lý ToTime và DurationMinutes
+                        string toTime = "";
+                        float durationMinutes = 0;
+
+                        if (i < records.Count - 1)
+                        {
+                            var nextRecord = records[i + 1];
+                            if (nextRecord.Datetime.HasValue)
+                            {
+                                durationMinutes = (float)(nextRecord.Datetime.Value - currentRecord.Datetime.Value).TotalMinutes;
+                                toTime = Math.Round(durationMinutes, 2).ToString(); // ToTime là số phút
+                            }
+                        }
+
+                        // Tạo record mới cho bảng Detail
+                        var detailRecord = new SVN_Equipment_Status_Update_Detail
+                        {
+                            Name = currentRecord.Name ?? "",
+                            Operation = currentRecord.Operation ?? "",
+                            State = currentRecord.State ?? "",
+                            EstimateTime = estimateTimeMinutes?.ToString("F2") ?? "",
+                            FromTime = currentRecord.Datetime.Value.ToString("yyyy-MM-dd HH:mm:ss"),
+                            ToTime = toTime, // Lưu số phút, để rỗng nếu chưa có
+                            DurationMinutes = durationMinutes
+                        };
+
+                        _context.SVN_Equipment_Status_Update_Detail.Add(detailRecord);
+                    }
+                }
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Đã xử lý thành công toàn bộ dữ liệu History vào Detail!" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi trong ProcessAllHistoryToDetail: {ex.Message}");
+                return Json(new { success = false, message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
+
+
+        [HttpPost]
+        public async Task<IActionResult> Create(SVN_Equipment_Info_History_Test model, IFormFile imageFile)
+        {
+            try
+            {
+                if (string.IsNullOrEmpty(model.Code) || string.IsNullOrEmpty(model.State))
                 {
                     return Json(new { success = false, message = "Vui lòng điền đầy đủ thông tin bắt buộc!" });
                 }
 
-                // Check code exists
                 var machineExists = await _context.sVN_Equipment_Machine_Info
                     .AnyAsync(x => x.SVNCode == model.Code);
 
@@ -129,7 +211,6 @@ namespace MachineStatusUpdate.Controllers
                 }
 
                 string imagePath = null;
-
                 if (imageFile != null && imageFile.Length > 0)
                 {
                     var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".bmp" };
@@ -156,21 +237,16 @@ namespace MachineStatusUpdate.Controllers
                     {
                         await imageFile.CopyToAsync(stream);
                     }
-
                     imagePath = $"/uploads/status-images/{fileName}";
-
                 }
 
                 string generateName = model.Code;
                 if (!string.IsNullOrEmpty(model.Code) && model.Code.Contains("-"))
                 {
                     var parts = model.Code.Split('-');
-                    if (parts.Length >= 2)
+                    if (parts.Length >= 2 && int.TryParse(parts[1], out int number))
                     {
-                        if (int.TryParse(parts[1], out int number))
-                        {
-                            generateName = $"#{number}";
-                        }
+                        generateName = $"#{number}";
                     }
                 }
 
@@ -178,20 +254,35 @@ namespace MachineStatusUpdate.Controllers
                 model.Operation = await GetOperationFromCodeAsync(model.Code);
                 model.Datetime = DateTime.Now;
 
-                // PROC Add records
-                await _context.Database.ExecuteSqlRawAsync(
-                "EXEC [dbo].[SVN_InsertMachineStatus] {0}, {1}, {2}, {3}, {4}, {5}, {6}",
-                    model.Code ?? "",
-                    model.Name ?? "",
-                    model.State ?? "",
-                    model.Operation ?? "",
-                    model.Description ?? "",
-                    imagePath ?? "",
-                    model.Datetime);
+                int insertedId = 0;
+                using (var command = _context.Database.GetDbConnection().CreateCommand())
+                {
+                    command.CommandText = "EXEC [dbo].[SVN_InsertMachineStatus_Test] @Code, @Name, @State, @Operation, @EstimateTime, @Description, @Image, @Datetime";
+                    command.CommandType = System.Data.CommandType.Text;
 
-                Console.WriteLine("Stored procedure executed successfully - Operation: {model.Operation}");
-                return Json(new { success = true, message = "Lưu trạng thái thành công!", data = model });
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Code", model.Code ?? ""));
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Name", model.Name ?? ""));
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@State", model.State ?? ""));
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Operation", model.Operation ?? ""));
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@EstimateTime", model.EstimateTime ?? ""));
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Description", model.Description ?? ""));
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Image", imagePath ?? ""));
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Datetime", model.Datetime));
 
+                    if (command.Connection.State != System.Data.ConnectionState.Open)
+                        await command.Connection.OpenAsync();
+
+                    var result = await command.ExecuteScalarAsync();
+                    insertedId = Convert.ToInt32(result);
+                }
+
+
+                var insertedRecord = await _context.SVN_Equipment_Info_History_Test
+                    .FirstOrDefaultAsync(x => x.Id == insertedId);
+
+                await _statusUpdateService.ProcessSingleRecordToUpdateDetail(insertedRecord);
+
+                return Json(new { success = true, message = "Lưu trạng thái thành công!", data = insertedRecord });
             }
             catch (Exception ex)
             {
@@ -200,12 +291,203 @@ namespace MachineStatusUpdate.Controllers
             }
         }
 
+        // Method để xử lý dữ liệu từ Detail sang Status Update
+        [HttpPost]
+        public async Task<IActionResult> ProcessToStatusUpdate(DateTime? filterDate = null)
+        {
+            try
+            {
+                await _statusUpdateService.ProcessDataToStatusUpdate(filterDate);
+                return Json(new { success = true, message = "Đã xử lý thành công dữ liệu vào bảng Status Update!" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi trong ProcessToStatusUpdate: {ex.Message}");
+                return Json(new { success = false, message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
+        // Method hiển thị Status Update Report
+        public async Task<IActionResult> StatusUpdateReport(DateTime? filterDate = null, string operation = "", int page = 1, int pageSize = 25)
+        {
+            try
+            {
+                var query = _context.SVN_Equipment_Status_Update.AsQueryable();
+
+                // Apply date filter
+                if (filterDate.HasValue)
+                {
+                    query = query.Where(x => x.Datetime.Date == filterDate.Value.Date);
+                }
+
+                if (!string.IsNullOrEmpty(operation))
+                {
+                    query = query.Where(x => x.Operation.Contains(operation));
+                }
+
+                var totalRecords = await query.CountAsync();
+
+                var results = await query
+                    .OrderByDescending(x => x.Datetime)
+                    .ThenBy(x => x.Name)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .AsNoTracking()
+                    .ToListAsync();
+
+                var totalPages = (int)Math.Ceiling((double)totalRecords / pageSize);
+
+                // Pagination ViewBag
+                ViewBag.CurrentPage = page;
+                ViewBag.TotalPages = totalPages;
+                ViewBag.PageSize = pageSize;
+                ViewBag.TotalRecords = totalRecords;
+                ViewBag.HasPreviousPage = page > 1;
+                ViewBag.HasNextPage = page < totalPages;
+
+                // Filter ViewBag
+                ViewBag.FilterDate = filterDate?.ToString("yyyy-MM-dd") ?? "";
+                ViewBag.Operation = operation ?? "";
+
+                return View(results);
+            }
+            catch (Exception ex)
+            {
+                ViewBag.ErrorMessage = $"Lỗi: {ex.Message}";
+                ViewBag.FilterDate = filterDate?.ToString("yyyy-MM-dd") ?? "";
+                ViewBag.Operation = operation ?? "";
+
+                // Set default pagination values for error case
+                ViewBag.CurrentPage = 1;
+                ViewBag.TotalPages = 0;
+                ViewBag.PageSize = pageSize;
+                ViewBag.TotalRecords = 0;
+                ViewBag.HasPreviousPage = false;
+                ViewBag.HasNextPage = false;
+
+                return View(new List<SVN_Equipment_Status_Update>());
+            }
+        }
+
+
+        // Method xuất Excel cho Status Update
+        public async Task<IActionResult> ExportStatusUpdateToExcel(DateTime? filterDate = null, string operation = "")
+        {
+            try
+            {
+                var query = _context.SVN_Equipment_Status_Update.AsQueryable();
+
+                if (filterDate.HasValue)
+                {
+                    query = query.Where(x => x.Datetime.Date == filterDate.Value.Date);
+                }
+
+                if (!string.IsNullOrEmpty(operation))
+                {
+                    query = query.Where(x => x.Operation.Contains(operation));
+                }
+
+                var data = await query
+                    .OrderByDescending(x => x.Datetime)
+                    .ThenBy(x => x.Name)
+                    .ToListAsync();
+
+                using (var workbook = new XLWorkbook())
+                {
+                    var ws = workbook.Worksheets.Add("StatusUpdateReport");
+                    var currentRow = 1;
+
+                    // Font mặc định
+                    ws.Style.Font.FontName = "Times New Roman";
+                    ws.Style.Font.FontSize = 11;
+
+                    // Header
+                    string[] headers = { "Id", "Name", "Operation", "Start Time", "Duration (min)", "Total Downtime (min)", "Date" };
+                    for (int i = 0; i < headers.Length; i++)
+                    {
+                        var cell = ws.Cell(currentRow, i + 1);
+                        cell.Value = headers[i];
+                        cell.Style.Font.Bold = true;
+                        cell.Style.Fill.BackgroundColor = XLColor.FromTheme(XLThemeColor.Accent1, 0.5);
+                        cell.Style.Font.FontColor = XLColor.White;
+                        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    }
+
+                    // Data rows
+                    foreach (var item in data)
+                    {
+                        currentRow++;
+                        ws.Cell(currentRow, 1).Value = item.Id;
+                        ws.Cell(currentRow, 2).Value = item.Name;
+                        ws.Cell(currentRow, 3).Value = item.Operation;
+                        ws.Cell(currentRow, 4).Value = item.StartTime;
+                        ws.Cell(currentRow, 5).Value = Math.Round(item.Duration, 2);
+                        ws.Cell(currentRow, 6).Value = Math.Round(item.TotalDuration, 2);
+                        ws.Cell(currentRow, 7).Value = item.Datetime.ToString("yyyyMMdd");
+                    }
+
+                    // Styling
+                    ws.Columns(1, 7).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                    ws.Columns(1, 7).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+
+                    // Column widths
+                    ws.Column(1).Width = 8;   // Id
+                    ws.Column(2).Width = 15;  // Name
+                    ws.Column(3).Width = 20;  // Operation
+                    ws.Column(4).Width = 20;  // Start Time
+                    ws.Column(5).Width = 15;  // Duration
+                    ws.Column(6).Width = 18;  // Total Downtime
+                    ws.Column(7).Width = 12;  // Date
+
+                    using (var stream = new MemoryStream())
+                    {
+                        workbook.SaveAs(stream);
+                        return File(stream.ToArray(),
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            $"StatusUpdateReport_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Lỗi ExportStatusUpdateToExcel: {ex.Message}");
+                return Json(new { success = false, message = $"Lỗi xuất Excel: {ex.Message}" });
+            }
+        }
+
+        // API endpoint để xử lý dữ liệu cho ngày cụ thể
+        [HttpPost]
+        public async Task<IActionResult> ProcessDataForDate([FromBody] ProcessDateRequest request)
+        {
+            try
+            {
+                DateTime? filterDate = null;
+                if (!string.IsNullOrEmpty(request.Date))
+                {
+                    if (DateTime.TryParse(request.Date, out DateTime parsedDate))
+                    {
+                        filterDate = parsedDate;
+                    }
+                }
+
+                await _statusUpdateService.ProcessDataToStatusUpdate(filterDate);
+                return Json(new { success = true, message = "Đã xử lý thành công!" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Lỗi: {ex.Message}" });
+            }
+        }
+
+
+        // Method hiển thị kết quả nhập trạng thái
         public async Task<IActionResult> Result(string code = "", string state = "", string operation = "",
             string fromInsDateTime = "", string toInsDateTime = "", int page = 1, int pageSize = 25)
         {
             try
             {
-                var query = _context.SVN_Equipment_Info_History.AsQueryable();
+                var query = _context.SVN_Equipment_Info_History_Test.AsQueryable();
 
                 // Apply filter
 
@@ -273,7 +555,7 @@ namespace MachineStatusUpdate.Controllers
                 ViewBag.HasPreviousPage = false;
                 ViewBag.HasNextPage = false;
 
-                return View(new List<SVN_Equipment_Info_History>());
+                return View(new List<SVN_Equipment_Info_History_Test>());
             }
         }
 
@@ -282,7 +564,7 @@ namespace MachineStatusUpdate.Controllers
         // Xuất File Excel kết quả
         public async Task<IActionResult> ExportToExcel(string code = "", string state = "", string operation = "", string fromInsDateTime = "", string toInsDateTime = "")
         {
-            var query = _context.SVN_Equipment_Info_History.AsQueryable();
+            var query = _context.SVN_Equipment_Info_History_Test.AsQueryable();
 
             if (!string.IsNullOrEmpty(code))
                 query = query.Where(x => x.Code.Contains(code));
@@ -420,372 +702,239 @@ namespace MachineStatusUpdate.Controllers
 
         }
 
-        // ============= DOWNTIME DETAIL REPORT =============
-        public async Task<IActionResult> DowntimeDetailReport(string code = "", string operation = "", string state = "",
-            string fromInsDateTime = "", string toInsDateTime = "")
+
+        public async Task<IActionResult> DowntimeDetailReport(
+    string code = "",
+     string state = "",
+     string operation = "",
+     string fromInsDateTime = "",
+     string toInsDateTime = "",
+     int page = 1,
+     int pageSize = 25)
         {
             try
             {
-                var query = _context.SVN_Equipment_Info_History.AsQueryable();
+                IQueryable<SVN_Equipment_Status_Update_Detail> query = _context.SVN_Equipment_Status_Update_Detail;
 
+                // Lọc theo Code
                 if (!string.IsNullOrEmpty(code))
-                    query = query.Where(x => x.Code.Contains(code));
-
-                if (!string.IsNullOrEmpty(operation))
-                    query = query.Where(x => x.Operation.Contains(operation));
-
-                if (!string.IsNullOrEmpty(state))
-                    query = query.Where(x => x.State.Contains(state));
-
-                if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out var fromDate))
-                    query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value >= fromDate);
-
-                if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out var toDate))
-                    query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value <= toDate);
-
-                var history = await query.OrderBy(x => x.Datetime).ToListAsync();
-                var report = new List<DowntimeReportDto>();
-
-                for (int i = 0; i < history.Count - 1; i++)
                 {
-                    var current = history[i];
-                    var next = history[i + 1];
-                    if (!current.Datetime.HasValue || !next.Datetime.HasValue) continue;
-
-                    var duration = next.Datetime.Value - current.Datetime.Value;
-
-                    report.Add(new DowntimeReportDto
-                    {
-                        Code = current.Code,
-                        Operation = current.Operation,
-                        State = current.State,
-                        FromTime = current.Datetime.Value,
-                        ToTime = next.Datetime.Value,
-                        DurationMinutes = duration.TotalMinutes
-                    });
+                    query = query.Where(x => x.Name.Contains(code));
                 }
 
-                // Truyền giá trị filter ra View
+                // Lọc theo State
+                if (!string.IsNullOrEmpty(state))
+                {
+                    query = query.Where(x => x.State.Contains(state));
+                }
 
-                ViewBag.Code = code ?? "";
-                ViewBag.State = state ?? "";
-                ViewBag.Operation = operation ?? "";
-                ViewBag.fromInsDateTime = fromInsDateTime ?? "";
-                ViewBag.toInsDateTime = toInsDateTime ?? "";
+                // Lọc theo Operation
+                if (!string.IsNullOrEmpty(operation))
+                {
+                    query = query.Where(x => x.Operation.Contains(operation));
+                }
 
+                // Lọc theo khoảng thời gian
+                if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out DateTime fromDate))
+                {
+                    query = query.Where(x => x.FromTime.CompareTo(fromDate.ToString("yyyy-MM-dd HH:mm:ss")) >= 0);
+                }
 
-                return View(report);
+                if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out DateTime toDate))
+                {
+                    query = query.Where(x => x.FromTime.CompareTo(toDate.ToString("yyyy-MM-dd HH:mm:ss")) <= 0);
+                }
+
+                // Lấy tổng số bản ghi
+                var totalRecords = await query.CountAsync();
+                var totalPages = (int)Math.Ceiling(totalRecords / (double)pageSize);
+
+                // Áp dụng phân trang
+                var pagedResults = await query
+                    .OrderByDescending(x => x.FromTime)
+                    .Skip((page - 1) * pageSize)
+                    .Take(pageSize)
+                    .ToListAsync();
+
+                // Gán dữ liệu vào ViewBag để truyền sang View
+                ViewBag.Code = code;
+                ViewBag.State = state;
+                ViewBag.Operation = operation;
+                ViewBag.fromInsDateTime = fromInsDateTime;
+                ViewBag.toInsDateTime = toInsDateTime;
+                ViewBag.CurrentPage = page;
+                ViewBag.PageSize = pageSize;
+                ViewBag.TotalPages = totalPages;
+                ViewBag.TotalRecords = totalRecords;
+                ViewBag.HasPreviousPage = page > 1;
+                ViewBag.HasNextPage = page < totalPages;
+
+                return View(pagedResults);
             }
             catch (Exception ex)
             {
                 ViewBag.ErrorMessage = $"Lỗi DowntimeDetailReport: {ex.Message}";
-                return View(new List<DowntimeReportDto>());
+                return View(new List<SVN_Equipment_Status_Update_Detail>());
             }
         }
 
-
-        // ============= DOWNTIME SUMMARY REPORT =============
-        public async Task<IActionResult> DowntimeSummaryReport(string code = "", string operation = "", string state = "",
-            string fromInsDateTime = "", string toInsDateTime = "")
+        // Xuất Excel cho Downtime Detail
+        public async Task<IActionResult> ExportDowntimeDetailToExcel(
+            string code = "",
+            string state = "",
+            string operation = "",
+            string fromInsDateTime = "",
+            string toInsDateTime = "")
         {
             try
             {
-                var query = _context.SVN_Equipment_Info_History.AsQueryable();
+                IQueryable<SVN_Equipment_Status_Update_Detail> query = _context.SVN_Equipment_Status_Update_Detail;
 
+                // Lọc theo Code
                 if (!string.IsNullOrEmpty(code))
-                    query = query.Where(x => x.Code.Contains(code));
+                    query = query.Where(x => x.Name.Contains(code));
 
-                if (!string.IsNullOrEmpty(operation))
-                    query = query.Where(x => x.Operation.Contains(operation));
-
+                // Lọc theo State
                 if (!string.IsNullOrEmpty(state))
                     query = query.Where(x => x.State.Contains(state));
 
-                if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out var fromDate))
-                    query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value >= fromDate);
+                // Lọc theo Operation
+                if (!string.IsNullOrEmpty(operation))
+                    query = query.Where(x => x.Operation.Contains(operation));
 
-                if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out var toDate))
-                    query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value <= toDate);
-
-                var history = await query.OrderBy(x => x.Datetime).ToListAsync();
-                var detail = new List<DowntimeReportDto>();
-
-                for (int i = 0; i < history.Count - 1; i++)
+                // Lọc theo khoảng thời gian
+                if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out DateTime fromDate))
                 {
-                    var current = history[i];
-                    var next = history[i + 1];
-                    if (!current.Datetime.HasValue || !next.Datetime.HasValue) continue;
-
-                    var duration = next.Datetime.Value - current.Datetime.Value;
-
-                    detail.Add(new DowntimeReportDto
-                    {
-                        Code = current.Code,
-                        Operation = current.Operation,
-                        State = current.State,
-                        FromTime = current.Datetime.Value,
-                        ToTime = next.Datetime.Value,
-                        DurationMinutes = duration.TotalMinutes
-                    });
+                    query = query.Where(x => x.FromTime.CompareTo(fromDate.ToString("yyyy-MM-dd HH:mm:ss")) >= 0);
                 }
 
-                var summary = detail
-                    .GroupBy(r => new { r.Code, r.Operation, r.State })
-                    .Select(g => new DowntimeSummaryDto
+                if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out DateTime toDate))
+                {
+                    query = query.Where(x => x.FromTime.CompareTo(toDate.ToString("yyyy-MM-dd HH:mm:ss")) <= 0);
+                }
+
+                var data = await query.OrderByDescending(x => x.FromTime).ToListAsync();
+
+                using (var workbook = new XLWorkbook())
+                {
+                    var ws = workbook.Worksheets.Add("DowntimeDetail");
+                    var currentRow = 1;
+
+                    // Font mặc định
+                    ws.Style.Font.FontName = "Times New Roman";
+                    ws.Style.Font.FontSize = 11;
+
+                    // Header
+                    string[] headers = { "Id", "Name", "Operation", "State", "Estimate Time (min)", "From Time", "To Time (min)", "Duration (min)" };
+                    for (int i = 0; i < headers.Length; i++)
                     {
-                        Code = g.Key.Code,
-                        Operation = g.Key.Operation,
-                        State = g.Key.State,
-                        TotalMinutes = g.Sum(x => x.DurationMinutes)
-                    })
-                    .ToList();
+                        var cell = ws.Cell(currentRow, i + 1);
+                        cell.Value = headers[i];
+                        cell.Style.Font.Bold = true;
+                        cell.Style.Fill.BackgroundColor = XLColor.FromTheme(XLThemeColor.Accent1, 0.5);
+                        cell.Style.Font.FontColor = XLColor.White;
+                        cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                        cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                    }
 
+                    // Data rows
+                    // Data rows
+                    foreach (var item in data)
+                    {
+                        currentRow++;
+                        ws.Cell(currentRow, 1).Value = item.Id;
+                        ws.Cell(currentRow, 2).Value = item.Name;
+                        ws.Cell(currentRow, 3).Value = item.Operation;
+                        ws.Cell(currentRow, 4).Value = item.State;
 
-                ViewBag.Code = code ?? "";
-                ViewBag.State = state ?? "";
-                ViewBag.Operation = operation ?? "";
-                ViewBag.fromInsDateTime = fromInsDateTime ?? "";
-                ViewBag.toInsDateTime = toInsDateTime ?? "";
+                        // Estimate Time
+                        if (!string.IsNullOrEmpty(item.EstimateTime) && double.TryParse(item.EstimateTime, out double estimateMinutes))
+                        {
+                            ws.Cell(currentRow, 5).Value = Math.Round(estimateMinutes, 1);
+                            ws.Cell(currentRow, 5).Style.NumberFormat.Format = "0.0";
+                        }
+                        else
+                        {
+                            ws.Cell(currentRow, 5).Value = ""; // để trống
+                        }
 
-                return View(summary);
+                        // FromTime
+                        if (!string.IsNullOrEmpty(item.FromTime))
+                        {
+                            ws.Cell(currentRow, 6).Value = item.FromTime;
+                        }
+                        else
+                        {
+                            ws.Cell(currentRow, 6).Value = "";
+                        }
+
+                        // ToTime
+                        if (!string.IsNullOrEmpty(item.ToTime) && double.TryParse(item.ToTime, out double toTimeMinutes))
+                        {
+                            ws.Cell(currentRow, 7).Value = Math.Round(toTimeMinutes, 1);
+                            ws.Cell(currentRow, 7).Style.NumberFormat.Format = "0.0";
+                        }
+                        else
+                        {
+                            ws.Cell(currentRow, 7).Value = "";
+                        }
+
+                        // Duration
+                        if (item.DurationMinutes > 0)
+                        {
+                            ws.Cell(currentRow, 8).Value = Math.Round(item.DurationMinutes, 1);
+                            ws.Cell(currentRow, 8).Style.NumberFormat.Format = "0.0";
+                        }
+                        else
+                        {
+                            ws.Cell(currentRow, 8).Value = "";
+                        }
+                    }
+                    // Styling
+                    ws.Columns().AdjustToContents();
+
+                    using (var stream = new MemoryStream())
+                    {
+                        workbook.SaveAs(stream);
+                        return File(stream.ToArray(),
+                            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                            $"DowntimeDetail_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+                    }
+                }
             }
             catch (Exception ex)
             {
-                ViewBag.ErrorMessage = $"Lỗi DowntimeSummaryReport: {ex.Message}";
-                return View(new List<DowntimeSummaryDto>());
-            }
-        }
-
-        // Xuất Excel Báo cáo chi tiết thời gian DownTime
-        public async Task<IActionResult> ExportDowntimeDetailToExcel(string code = "", string operation = "", string state = "",
-            string fromInsDateTime = "", string toInsDateTime = "")
-        {
-            var query = _context.SVN_Equipment_Info_History.AsQueryable();
-
-            if (!string.IsNullOrEmpty(code))
-                query = query.Where(x => x.Code.Contains(code));
-
-            if (!string.IsNullOrEmpty(operation))
-                query = query.Where(x => x.Operation.Contains(operation));
-
-            if (!string.IsNullOrEmpty(state))
-                query = query.Where(x => x.State.Contains(state));
-
-            if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out var fromDate))
-                query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value >= fromDate);
-
-            if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out var toDate))
-                query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value <= toDate);
-
-            var history = await query.OrderBy(x => x.Datetime).ToListAsync();
-            var report = new List<DowntimeReportDto>();
-
-            for (int i = 0; i < history.Count - 1; i++)
-            {
-                var current = history[i];
-                var next = history[i + 1];
-                if (!current.Datetime.HasValue || !next.Datetime.HasValue) continue;
-
-                var duration = next.Datetime.Value - current.Datetime.Value;
-
-                report.Add(new DowntimeReportDto
-                {
-                    Code = current.Code,
-                    Operation = current.Operation,
-                    State = current.State,
-                    FromTime = current.Datetime.Value,
-                    ToTime = next.Datetime.Value,
-                    DurationMinutes = Math.Round(duration.TotalMinutes, 2)
-                });
-            }
-
-            using (var workbook = new XLWorkbook())
-            {
-                var ws = workbook.Worksheets.Add("DowntimeDetail");
-                var currentRow = 1;
-
-                // Font mặc định
-                ws.Style.Font.FontName = "Times New Roman";
-                ws.Style.Font.FontSize = 11;
-
-                // Header
-                string[] headers = { "Code", "Operation", "State", "From", "To", "Duration (minutes)" };
-                for (int i = 0; i < headers.Length; i++)
-                {
-                    var cell = ws.Cell(currentRow, i + 1);
-                    cell.Value = headers[i];
-                    cell.Style.Font.Bold = true;
-                    cell.Style.Fill.BackgroundColor = XLColor.FromTheme(XLThemeColor.Accent1, 0.5);
-                    cell.Style.Font.FontColor = XLColor.White;
-                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                }
-
-                // Thiết lập chiều cao hàng cho data
-                const double rowHeight = 25;
-
-                foreach (var item in report)
-                {
-                    currentRow++;
-                    ws.Row(currentRow).Height = rowHeight;
-                    ws.Cell(currentRow, 1).Value = item.Code;
-                    ws.Cell(currentRow, 2).Value = item.Operation;
-                    ws.Cell(currentRow, 3).Value = item.State;
-                    ws.Cell(currentRow, 4).Value = item.FromTime.ToString("yyyy-MM-dd HH:mm:ss");
-                    ws.Cell(currentRow, 5).Value = item.ToTime.ToString("yyyy-MM-dd HH:mm:ss");
-                    ws.Cell(currentRow, 6).Value = item.DurationMinutes;
-                }
-
-                // Canh giữa các cột
-                ws.Columns(1, 6).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                ws.Columns(1, 6).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-
-                // Thiết lập chiều rộng cột
-                ws.Column(1).Width = 15; // Code
-                ws.Column(2).Width = 15; // Operation
-                ws.Column(3).Width = 15; // State
-                ws.Column(4).Width = 20; // From
-                ws.Column(5).Width = 20; // To
-                ws.Column(6).Width = 18; // Duration
-
-                using (var stream = new MemoryStream())
-                {
-                    workbook.SaveAs(stream);
-                    return File(stream.ToArray(),
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        "DowntimeDetailReport.xlsx");
-                }
+                Console.WriteLine($"Lỗi ExportDowntimeDetailToExcel: {ex.Message}");
+                return Json(new { success = false, message = $"Lỗi xuất Excel: {ex.Message}" });
             }
         }
 
 
-        // Xuất Excel Báo cáo tổng hợp thời gian DownTime
-        public async Task<IActionResult> ExportDowntimeSummaryToExcel(string code = "", string operation = "", string state = "",
-            string fromInsDateTime = "", string toInsDateTime = "")
+
+        // Hàm test
+        [HttpGet]
+        public async Task<IActionResult> TestProcessAll()
         {
-            var query = _context.SVN_Equipment_Info_History.AsQueryable();
-
-            if (!string.IsNullOrEmpty(code))
-                query = query.Where(x => x.Code.Contains(code));
-
-            if (!string.IsNullOrEmpty(state))
-                query = query.Where(x => x.State.Contains(state));
-
-            if (!string.IsNullOrEmpty(operation))
-                query = query.Where(x => x.Operation.Contains(operation));
-
-            if (!string.IsNullOrEmpty(fromInsDateTime) && DateTime.TryParse(fromInsDateTime, out var fromDate))
-                query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value >= fromDate);
-
-            if (!string.IsNullOrEmpty(toInsDateTime) && DateTime.TryParse(toInsDateTime, out var toDate))
-                query = query.Where(x => x.Datetime.HasValue && x.Datetime.Value <= toDate);
-
-            var history = await query.OrderBy(x => x.Datetime).ToListAsync();
-            var detail = new List<DowntimeReportDto>();
-
-            for (int i = 0; i < history.Count - 1; i++)
+            try
             {
-                var current = history[i];
-                var next = history[i + 1];
-                if (!current.Datetime.HasValue || !next.Datetime.HasValue) continue;
-
-                var duration = next.Datetime.Value - current.Datetime.Value;
-
-                detail.Add(new DowntimeReportDto
-                {
-                    Code = current.Code,
-                    Operation = current.Operation,
-                    State = current.State,
-                    FromTime = current.Datetime.Value,
-                    ToTime = next.Datetime.Value,
-                    DurationMinutes = duration.TotalMinutes
-                });
+                return await ProcessAllHistoryToDetail();
             }
-
-            var summary = detail
-                .GroupBy(r => new { r.Code, r.Operation, r.State })
-                .Select(g => new DowntimeSummaryDto
-                {
-                    Code = g.Key.Code,
-                    Operation = g.Key.Operation,
-                    State = g.Key.State,
-                    TotalMinutes = Math.Round(g.Sum(x => x.DurationMinutes), 2)
-                })
-                .ToList();
-
-            using (var workbook = new XLWorkbook())
+            catch (Exception ex)
             {
-                var ws = workbook.Worksheets.Add("DowntimeSummary");
-                var currentRow = 1;
-
-                // Font mặc định
-                ws.Style.Font.FontName = "Times New Roman";
-                ws.Style.Font.FontSize = 11;
-
-                // Header
-                string[] headers = { "Code", "Operation", "State", "Total Minutes" };
-                for (int i = 0; i < headers.Length; i++)
-                {
-                    var cell = ws.Cell(currentRow, i + 1);
-                    cell.Value = headers[i];
-                    cell.Style.Font.Bold = true;
-                    cell.Style.Fill.BackgroundColor = XLColor.FromTheme(XLThemeColor.Accent1, 0.5);
-                    cell.Style.Font.FontColor = XLColor.White;
-                    cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                    cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                }
-
-                // Thiết lập chiều cao hàng cho data
-                const double rowHeight = 25;
-
-                foreach (var item in summary)
-                {
-                    currentRow++;
-                    ws.Row(currentRow).Height = rowHeight;
-                    ws.Cell(currentRow, 1).Value = item.Code;
-                    ws.Cell(currentRow, 2).Value = item.Operation;
-                    ws.Cell(currentRow, 3).Value = item.State;
-                    ws.Cell(currentRow, 4).Value = item.TotalMinutes;
-                }
-
-                // Canh giữa các cột
-                ws.Columns(1, 4).Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
-                ws.Columns(1, 4).Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-
-                // Thiết lập chiều rộng cột
-                ws.Column(1).Width = 15; // Code
-                ws.Column(2).Width = 15; // Operation
-                ws.Column(3).Width = 15; // State
-                ws.Column(4).Width = 18; // Total Minutes
-
-                using (var stream = new MemoryStream())
-                {
-                    workbook.SaveAs(stream);
-                    return File(stream.ToArray(),
-                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                        "DowntimeSummaryReport.xlsx");
-                }
+                return Json(new { success = false, message = ex.Message, stackTrace = ex.StackTrace });
             }
         }
 
-        // DTO class
-        public class DowntimeReportDto
+
+        // DTO class cho request
+        public class ProcessDateRequest
         {
-            public string Code { get; set; }
-            public string Operation { get; set; }
-            public string State { get; set; }
-            public DateTime FromTime { get; set; }
-            public DateTime ToTime { get; set; }
-            public double DurationMinutes { get; set; }
+            public string Date { get; set; }
         }
 
-        // DTO cho tổng hợp
-        public class DowntimeSummaryDto
+        public class InsertedIdResult
         {
-            public string Code { get; set; }
-            public string Operation { get; set; }
-            public string State { get; set; }
-            public double TotalMinutes { get; set; }
+            public int InsertedId { get; set; }
         }
 
 

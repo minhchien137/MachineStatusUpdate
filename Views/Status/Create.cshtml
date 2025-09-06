@@ -1,4 +1,4 @@
-﻿@model MachineStatusUpdate.Models.SVN_Equipment_Info_History
+﻿@model MachineStatusUpdate.Models.SVN_Equipment_Info_History_Test
 
 <link rel="stylesheet" href="~/css/create-form.css" asp-append-version="true" />
 
@@ -60,11 +60,18 @@
             </div>
         </div>
 
+
+        <div class="form-group full-width">
+            <label class="form-label">Thời gian ước lượng</label>
+            <input id="EstimateTime" name="EstimateTime" class="form-control" type="time" step="60" />
+        </div>
+
         <div class="form-group full-width">
             <label class="form-label">Mô tả (tùy chọn)</label>
             <textarea id="Description" name="Description" class="form-control" placeholder="Nhập mô tả..."
                 rows="4"></textarea>
         </div>
+
 
         <div class="form-group full-width">
             <label class="form-label">Ảnh (tùy chọn)</label>
@@ -183,11 +190,11 @@
             }
 
             toast.innerHTML = `
-                                                                                                                                                                                                                    <span class="toast-icon">${icon}</span>
-                                                                                                                                                                                                                    ${message}
-                                                                                                                                                                                                                    <button class="toast-close" onclick="closeToast(this)">&times;</button>
-                                                                                                                                                                                                                    <div class="toast-progress"></div>
-                                                                                                                                                                                                                `;
+                                                                                                                                                                                                                                                                        <span class="toast-icon">${icon}</span>
+                                                                                                                                                                                                                                                                        ${message}
+                                                                                                                                                                                                                                                                        <button class="toast-close" onclick="closeToast(this)">&times;</button>
+                                                                                                                                                                                                                                                                        <div class="toast-progress"></div>
+                                                                                                                                                                                                                                                                    `;
 
             toastContainer.appendChild(toast);
 
@@ -301,6 +308,7 @@
             const code = document.getElementById("Code").value.trim();
             const status = document.getElementById("State").value.trim();
             const description = document.getElementById("Description").value.trim();
+            const estimateTime = document.getElementById("EstimateTime").value.trim();
 
             const btn = document.getElementById("btnSaveToDB");
             btn.disabled = true;
@@ -309,6 +317,7 @@
             const formData = new FormData();
             formData.append('Code', code);
             formData.append('State', status);
+            formData.append('EstimateTime', estimateTime);
             formData.append('Description', description);
 
             const imageInput = document.getElementById('imageInput');

@@ -1,9 +1,9 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MachineStatusUpdate.Models
 {
-    public class SVN_Equipment_Info_History
+    public class SVN_Equipment_Info_History_Test
     {
 
         [Key]

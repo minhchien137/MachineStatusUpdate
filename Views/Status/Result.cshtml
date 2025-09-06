@@ -1,4 +1,4 @@
-﻿@model List<MachineStatusUpdate.Models.SVN_Equipment_Info_History>
+﻿@model List<MachineStatusUpdate.Models.SVN_Equipment_Info_History_Test>
 
 
 @{
@@ -125,6 +125,7 @@
                                     <th>Name</th>
                                     <th>State</th>
                                     <th>Operation</th>
+                                    <th>EstimateTime</th>
                                     <th>Description</th>
                                     <th>Image</th>
                                     <th>Datetime</th>
@@ -136,8 +137,27 @@
                                     <tr>
                                         <td>@(string.IsNullOrWhiteSpace(item.Code) ? Html.Raw("<span class='text-null'>NULL</span>") : item.Code)</td>
                                         <td>@(string.IsNullOrWhiteSpace(item.Name) ? Html.Raw("<span class='text-null'>NULL</span>") : item.Name)</td>
-                                        <td>@(string.IsNullOrWhiteSpace(item.State) ? Html.Raw("<span class='text-null'>NULL</span>") : item.State)</td>
+                                        <td>
+                @if (!string.IsNullOrWhiteSpace(item.State))
+                {
+                    <span class="badge 
+                          @(item.State == "Run" ? "bg-success" :
+                            item.State == "Fault" ? "bg-warning" : 
+                            item.State == "Adjust" ? "bg-primary" : 
+                            item.State == "Item" ? "bg-light text-dark" : 
+                            item.State == "Main" ? "bg-secondary" : 
+                            item.State == "Stop" ? "bg-danger" : 
+                            item.State == "Deve" ? "bg-dark" : "bg-secondary")">
+                        @item.State
+                    </span>
+                }
+                else
+                {
+                    <span class="text-null">NULL</span>
+                }
+            </td>
                                         <td>@(string.IsNullOrWhiteSpace(item.Operation) ? Html.Raw("<span class='text-null'>NULL</span>") : item.Operation)</td>
+                                        <td>@(string.IsNullOrWhiteSpace(item.EstimateTime) ? Html.Raw("<span class='text-null'>NULL</span>") : item.EstimateTime)</td>
                                         <td>
                                             @if (!string.IsNullOrWhiteSpace(item.Description))
                                             {
