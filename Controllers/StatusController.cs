@@ -402,7 +402,7 @@ namespace MachineStatusUpdate.Controllers
                     ws.Style.Font.FontSize = 11;
 
                     // Header
-                    string[] headers = { "Id", "Name", "Operation", "Start Time", "Duration (min)", "Total Downtime (hours)", "Date" };
+                    string[] headers = { "Id", "Name", "Operation", "Start Time", "Duration (min)", "Total Downtime (min)", "Date" };
                     for (int i = 0; i < headers.Length; i++)
                     {
                         var cell = ws.Cell(currentRow, i + 1);
@@ -423,7 +423,7 @@ namespace MachineStatusUpdate.Controllers
                         ws.Cell(currentRow, 3).Value = item.Operation;
                         ws.Cell(currentRow, 4).Value = item.StartTime;
                         ws.Cell(currentRow, 5).Value = Math.Round(item.Duration, 2);
-                        ws.Cell(currentRow, 6).Value = Math.Round(item.TotalDuration / 60, 2);
+                        ws.Cell(currentRow, 6).Value = Math.Round(item.TotalDuration, 2);
                         ws.Cell(currentRow, 7).Value = item.Datetime.ToString("yyyyMMdd");
                     }
 

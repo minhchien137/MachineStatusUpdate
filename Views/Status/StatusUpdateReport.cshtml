@@ -57,7 +57,7 @@
                             <th>Operation</th>
                             <th>Start Time</th>
                             <th>Duration (minutes)</th>
-                            <th>Total Duration (hours)</th>
+                            <th>Total Duration (minutes)</th>
                             <th>Datetime</th>
                         </tr>
                     </thead>
@@ -69,7 +69,7 @@
                                 <td>@item.Operation</td>
                                 <td>@item.StartTime</td>
                                 <td>@Math.Round(item.Duration, 2)</td>
-                                <td>@Math.Round(item.TotalDuration / 60, 2)</td>
+                                <td>@Math.Round(item.TotalDuration, 2)</td>
                                 <td>@item.Datetime.ToString("yyyy-MM-dd")</td>
                             </tr>
                         }
@@ -229,7 +229,7 @@
                     var operation = item.Operation || item.operation || 'Unknown';
                     var name = item.Name || item.name || 'Unknown';
                     var duration = Number(item.Duration || item.duration || 0) || 0;
-                    var totalDuration = parseFloat(((Number(item.TotalDuration || item.totalDuration || 0) || 0) / 60).toFixed(2));
+                    var totalDuration = Number(item.TotalDuration || item.totalDuration || 0) || 0;
 
                     if (!groupedData[operation]) groupedData[operation] = {};
                     if (!groupedData[operation][name]) groupedData[operation][name] = { duration: 0, totalDuration: 0 };
@@ -288,7 +288,7 @@
 
                                         var details = filteredData
                                             .filter(x => (x.Operation === operation || x.operation === operation) && (x.Name === name || x.name === name))
-                                            .map(x => `Start: ${x.StartTime || x.startTime || ''}, Duration: ${Number(x.Duration || x.duration || 0).toFixed(2)}p, Total: ${(Number(x.TotalDuration || x.totalDuration || 0) / 60).toFixed(2)}h`);
+                                            .map(x => `Start: ${x.StartTime || x.startTime || ''}, Duration: ${Number(x.Duration || x.duration || 0).toFixed(2)}p, Total: ${Number(x.TotalDuration || x.totalDuration || 0).toFixed(2)}h`);
                                         return details;
                                     }
                                 }
@@ -298,7 +298,7 @@
                         },
                         scales: {
                             x: { title: { display: true, text: 'Operation - Machine Name' } },
-                            y: { beginAtZero: true, title: { display: true, text: 'Thời gian (phút/giờ)' } }
+                            y: { beginAtZero: true, title: { display: true, text: 'Thời gian (giờ)' } }
                         }
                     }
                 });
