@@ -4718,11 +4718,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "D:\\MachineStatusUpdate\\MachineStatusUpdate\\MachineStatusUpdate.csproj",
+      "projectUniqueName": "D:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj",
       "projectName": "MachineStatusUpdate",
-      "projectPath": "D:\\MachineStatusUpdate\\MachineStatusUpdate\\MachineStatusUpdate.csproj",
+      "projectPath": "D:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj",
       "packagesPath": "C:\\Users\\sigma-chien\\.nuget\\packages\\",
-      "outputPath": "D:\\MachineStatusUpdate\\MachineStatusUpdate\\obj\\",
+      "outputPath": "D:\\MachineStatusUpdatee\\MachineStatusUpdate\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

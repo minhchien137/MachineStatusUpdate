@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "zT4enFiaUvA=",
+  "dgSpecHash": "bgzcWr9GU6I=",
   "success": true,
-  "projectFilePath": "D:\\MachineStatusUpdate\\MachineStatusUpdate\\MachineStatusUpdate.csproj",
+  "projectFilePath": "D:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\sigma-chien\\.nuget\\packages\\azure.core\\1.25.0\\azure.core.1.25.0.nupkg.sha512",
     "C:\\Users\\sigma-chien\\.nuget\\packages\\azure.identity\\1.7.0\\azure.identity.1.7.0.nupkg.sha512",

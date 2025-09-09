@@ -150,7 +150,7 @@ namespace MachineStatusUpdate.Services
 
                     var nonRunRecords = records.Where(x => !string.Equals(x.State, "Run", StringComparison.OrdinalIgnoreCase)).ToList();
 
-                    decimal totalDowntimeDuration = (decimal)nonRunRecords.Sum(x => x.DurationMinutes);
+                    decimal totalDowntimeDuration = (decimal)nonRunRecords.Sum(x => x.DurationMinutes) / 60m;
 
                     decimal duration = 0;
                     if (!string.Equals(latestDetailRecord?.State, "Run", StringComparison.OrdinalIgnoreCase))
@@ -169,7 +169,7 @@ namespace MachineStatusUpdate.Services
                                 }
                                 return 0;
                             });
-                            duration = durations.Any() ? durations.Max() : 0;
+                            duration = durations.Any() ? durations.Max() / 60m : 0;
                         }
                     }
 
