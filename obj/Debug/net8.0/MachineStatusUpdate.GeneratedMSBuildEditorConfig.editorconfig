@@ -9,57 +9,57 @@ build_property.EnforceExtendedAnalyzerRules =
 build_property._SupportedPlatformList = Linux,macOS,Windows
 build_property.RootNamespace = MachineStatusUpdate
 build_property.RootNamespace = MachineStatusUpdate
-build_property.ProjectDir = D:\MachineStatusUpdatee\MachineStatusUpdate\
+build_property.ProjectDir = d:\MachineStatusUpdatee\MachineStatusUpdate\
 build_property.EnableComHosting = 
 build_property.EnableGeneratedComInterfaceComImportInterop = 
 build_property.RazorLangVersion = 8.0
 build_property.SupportLocalizedComponentNames = 
 build_property.GenerateRazorMetadataSourceChecksumAttributes = 
-build_property.MSBuildProjectDirectory = D:\MachineStatusUpdatee\MachineStatusUpdate
+build_property.MSBuildProjectDirectory = d:\MachineStatusUpdatee\MachineStatusUpdate
 build_property._RazorSourceGeneratorDebug = 
 build_property.EffectiveAnalysisLevelStyle = 8.0
 build_property.EnableCodeStyleSeverity = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/Home/Index.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/Home/Index.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxJbmRleC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/Home/Privacy.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/Home/Privacy.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcSG9tZVxQcml2YWN5LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/Shared/Error.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/Shared/Error.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXEVycm9yLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/Shared/_ValidationScriptsPartial.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/Shared/_ValidationScriptsPartial.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9WYWxpZGF0aW9uU2NyaXB0c1BhcnRpYWwuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/Status/Create.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/Status/Create.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzXENyZWF0ZS5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/Status/DowntimeDetailReport.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/Status/DowntimeDetailReport.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzXERvd250aW1lRGV0YWlsUmVwb3J0LmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/Status/Result.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/Status/Result.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzXFJlc3VsdC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/Status/StatusUpdateReport.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/Status/StatusUpdateReport.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU3RhdHVzXFN0YXR1c1VwZGF0ZVJlcG9ydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/_ViewImports.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/_ViewImports.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdJbXBvcnRzLmNzaHRtbA==
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/_ViewStart.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/_ViewStart.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcX1ZpZXdTdGFydC5jc2h0bWw=
 build_metadata.AdditionalFiles.CssScope = 
 
-[D:/MachineStatusUpdatee/MachineStatusUpdate/Views/Shared/_Layout.cshtml]
+[d:/MachineStatusUpdatee/MachineStatusUpdate/Views/Shared/_Layout.cshtml]
 build_metadata.AdditionalFiles.TargetPath = Vmlld3NcU2hhcmVkXF9MYXlvdXQuY3NodG1s
 build_metadata.AdditionalFiles.CssScope = b-nvietuu82f

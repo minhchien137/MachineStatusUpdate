@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj": {}
+    "d:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj": {}
   },
   "projects": {
-    "D:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj": {
+    "d:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj",
+        "projectUniqueName": "d:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj",
         "projectName": "MachineStatusUpdate",
-        "projectPath": "D:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj",
+        "projectPath": "d:\\MachineStatusUpdatee\\MachineStatusUpdate\\MachineStatusUpdate.csproj",
         "packagesPath": "C:\\Users\\sigma-chien\\.nuget\\packages\\",
-        "outputPath": "D:\\MachineStatusUpdatee\\MachineStatusUpdate\\obj\\",
+        "outputPath": "d:\\MachineStatusUpdatee\\MachineStatusUpdate\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"

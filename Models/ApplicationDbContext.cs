@@ -9,7 +9,7 @@ namespace MachineStatusUpdate.Models
         {
         }
 
-        public DbSet<SVN_Equipment_Info_History> SVN_Equipment_Info_History { get; set; }
+        public DbSet<SVN_Equipment_Info_History_Temp> SVN_Equipment_Info_History_Temp { get; set; }
 
         public DbSet<SVN_Equipment_Info_History_Test> SVN_Equipment_Info_History_Test { get; set; }
 

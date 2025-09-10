@@ -16,6 +16,8 @@ namespace MachineStatusUpdate.Models
 
         public string? State { get; set; }
 
+        // public string? Work_order { get; set; } 
+
         public string? Operation { get; set; }
 
         public string? EstimateTime { get; set; }

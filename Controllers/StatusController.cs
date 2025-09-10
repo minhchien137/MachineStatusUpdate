@@ -121,7 +121,7 @@ namespace MachineStatusUpdate.Controllers
                 await _context.SaveChangesAsync();
 
                 // Lấy tất cả records từ History, group by Code và xử lý
-                var allHistoryRecords = await _context.SVN_Equipment_Info_History_Test
+                var allHistoryRecords = await _context.SVN_Equipment_Info_History_Temp
                     .OrderBy(x => x.Code)
                     .ThenBy(x => x.Datetime)
                     .ToListAsync();
@@ -193,7 +193,7 @@ namespace MachineStatusUpdate.Controllers
 
 
         [HttpPost]
-        public async Task<IActionResult> Create(SVN_Equipment_Info_History_Test model, IFormFile imageFile)
+        public async Task<IActionResult> Create(SVN_Equipment_Info_History_Temp model, IFormFile imageFile)
         {
             try
             {
@@ -257,12 +257,13 @@ namespace MachineStatusUpdate.Controllers
                 int insertedId = 0;
                 using (var command = _context.Database.GetDbConnection().CreateCommand())
                 {
-                    command.CommandText = "EXEC [dbo].[SVN_InsertMachineStatus_Test] @Code, @Name, @State, @Operation, @EstimateTime, @Description, @Image, @Datetime";
+                    command.CommandText = "EXEC [dbo].[SVN_InsertMachineStatus_Temp] @Code, @Name, @State, @Work_order, @Operation, @EstimateTime, @Description, @Image, @Datetime";
                     command.CommandType = System.Data.CommandType.Text;
 
                     command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Code", model.Code ?? ""));
                     command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Name", model.Name ?? ""));
                     command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@State", model.State ?? ""));
+                    command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Work_order", model.Work_order ?? ""));
                     command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Operation", model.Operation ?? ""));
                     command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@EstimateTime", model.EstimateTime ?? ""));
                     command.Parameters.Add(new Microsoft.Data.SqlClient.SqlParameter("@Description", model.Description ?? ""));
@@ -277,10 +278,10 @@ namespace MachineStatusUpdate.Controllers
                 }
 
 
-                var insertedRecord = await _context.SVN_Equipment_Info_History_Test
+                var insertedRecord = await _context.SVN_Equipment_Info_History_Temp
                     .FirstOrDefaultAsync(x => x.Id == insertedId);
 
-                await _statusUpdateService.ProcessSingleRecordToUpdateDetail(insertedRecord);
+                // await _statusUpdateService.ProcessSingleRecordToUpdateDetail(insertedRecord);
 
                 return Json(new { success = true, message = "Lưu trạng thái thành công!", data = insertedRecord });
             }
@@ -471,7 +472,7 @@ namespace MachineStatusUpdate.Controllers
                     }
                 }
 
-                await _statusUpdateService.ProcessDataToStatusUpdate(filterDate);
+                // await _statusUpdateService.ProcessDataToStatusUpdate(filterDate);
                 return Json(new { success = true, message = "Đã xử lý thành công!" });
             }
             catch (Exception ex)
@@ -487,7 +488,7 @@ namespace MachineStatusUpdate.Controllers
         {
             try
             {
-                var query = _context.SVN_Equipment_Info_History_Test.AsQueryable();
+                var query = _context.SVN_Equipment_Info_History_Temp.AsQueryable();
 
                 // Apply filter
 
@@ -555,7 +556,7 @@ namespace MachineStatusUpdate.Controllers
                 ViewBag.HasPreviousPage = false;
                 ViewBag.HasNextPage = false;
 
-                return View(new List<SVN_Equipment_Info_History_Test>());
+                return View(new List<SVN_Equipment_Info_History_Temp>());
             }
         }
 
@@ -564,7 +565,7 @@ namespace MachineStatusUpdate.Controllers
         // Xuất File Excel kết quả
         public async Task<IActionResult> ExportToExcel(string code = "", string state = "", string operation = "", string fromInsDateTime = "", string toInsDateTime = "")
         {
-            var query = _context.SVN_Equipment_Info_History_Test.AsQueryable();
+            var query = _context.SVN_Equipment_Info_History_Temp.AsQueryable();
 
             if (!string.IsNullOrEmpty(code))
                 query = query.Where(x => x.Code.Contains(code));

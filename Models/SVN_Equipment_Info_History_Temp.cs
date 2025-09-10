@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace MachineStatusUpdate.Models
 {
-    public class SVN_Equipment_Info_History
+    public class SVN_Equipment_Info_History_Temp
     {
 
         [Key]
@@ -15,6 +15,8 @@ namespace MachineStatusUpdate.Models
         public string? Name { get; set; }
 
         public string? State { get; set; }
+
+        public string? Work_order { get; set; }
 
         public string? Operation { get; set; }
 

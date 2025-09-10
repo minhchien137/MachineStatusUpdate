@@ -15,11 +15,11 @@ namespace MachineStatusUpdate.Services
             _context = context;
         }
 
-        public async Task ProcessSingleRecordToUpdateDetail(SVN_Equipment_Info_History_Test model)
+        public async Task ProcessSingleRecordToUpdateDetail(SVN_Equipment_Info_History_Temp model)
         {
             try
             {
-                var historyRecords = await _context.SVN_Equipment_Info_History_Test
+                var historyRecords = await _context.SVN_Equipment_Info_History_Temp
                     .Where(x => x.Code == model.Code)
                     .OrderBy(x => x.Datetime)
                     .ToListAsync();

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("MachineStatusUpdate")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+dbe37a990b71ee159e55e7c7cfcdcfd9941d028f")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+392d0aca37fbf3ead277bdaff6cb0fb158c71754")]
 [assembly: System.Reflection.AssemblyProductAttribute("MachineStatusUpdate")]
 [assembly: System.Reflection.AssemblyTitleAttribute("MachineStatusUpdate")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

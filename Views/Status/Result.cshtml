@@ -1,4 +1,4 @@
-﻿@model List<MachineStatusUpdate.Models.SVN_Equipment_Info_History_Test>
+﻿@model List<MachineStatusUpdate.Models.SVN_Equipment_Info_History_Temp>
 
 
 @{
@@ -41,6 +41,13 @@
                                 <input type="text" class="form-control" name="State" value="@ViewBag.State"
                                        placeholder="Nhập trạng thái(State)...">       
                             </div>
+
+                             <div class="col-md-3">
+                                <label class="form-label">Work Order:</label>
+                                <input type="text" class="form-control" name="WorkOrder" value="@ViewBag.WorkOrder"
+                                       placeholder="Nhập mã Work Order...">       
+                            </div>
+
                             <div class="col-md-3">
                                 <label class="form-label">Operation:</label>
                                 <input type="text" class="form-control" name="Operation" value="@ViewBag.Operation"
@@ -77,6 +84,7 @@
                                  <a style="margin-left: 9px;" href="@Url.Action("ExportToExcel", "Status", new { 
                                     code = @ViewBag.Code, 
                                     state = @ViewBag.State,
+                                    workOrder = @ViewBag.WorkOrder,
                                     operation = @ViewBag.Operation,
                                     fromInsDateTime = @ViewBag.FromInsDateTime,
                                     toInsDateTime = @ViewBag.ToInsDateTime
@@ -121,6 +129,7 @@
                             <table class="table table-striped table-hover" id="stateTable">
                                 <thead>
                                 <tr>
+                                    <th>WorkOrder</th>
                                     <th>Code</th>
                                     <th>Name</th>
                                     <th>State</th>
@@ -135,6 +144,7 @@
                                 @foreach (var item in Model)
                                 {
                                     <tr>
+                                        <td>@(string.IsNullOrWhiteSpace(item.Work_order) ? Html.Raw("<span class='text-null'>NULL</span>") : item.Work_order)</td>
                                         <td>@(string.IsNullOrWhiteSpace(item.Code) ? Html.Raw("<span class='text-null'>NULL</span>") : item.Code)</td>
                                         <td>@(string.IsNullOrWhiteSpace(item.Name) ? Html.Raw("<span class='text-null'>NULL</span>") : item.Name)</td>
                                         <td>
@@ -324,6 +334,7 @@
             {
                 { "page", page },
                 { "pageSize", ViewBag.PageSize ?? 25 },
+                { "workOrder", ViewBag.WorkOrder ?? "" },
                 { "code", ViewBag.Code ?? "" },
                 { "state", ViewBag.State ?? "" },
                 { "operation", ViewBag.Operation ?? "" },
